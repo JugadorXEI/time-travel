@@ -88,6 +88,7 @@ timetravel.changePositions = function(mo, dontrunextralogic)
 				S_StartSound(mo, sfx_ttfrag)
 				if mo.linkedItem then S_StartSound(mo.linkedItem, sfx_ttfrag) end
 				P_DamageMobj(mo, nil, nil, 10000) -- DEATH.
+				-- TODO: fix orbitals here crashing the game.
 			end
 		end
 	end
@@ -144,9 +145,9 @@ timetravel.runHooks = function(mo)
 end
 
 timetravel.handleThunderShieldZap = function(player)
-	if player.mo == nil or not player.mo.valid then return end
-	
 	local mobj = player.mo
+	if not (mobj and mobj.valid) then return end
+	
 	local thunderradius = RING_DIST/4
 	
 	searchBlockmap("objects", function(refmobj, foundmobj)
@@ -164,31 +165,34 @@ end
 
 addHook("PreThinkFrame", function() -- Init
 	if timetravel.VERSION > VERSION then return end
-	if leveltime ~= 2 then return end
-	
 	if not timetravel.isActive then return end
 	
 	for player in players.iterate do
-		if player.mo and player.mo.valid then
-			player.mo.timetravel = {}
-			player.mo.timetravel.isTimeWarped = false
+		local pMo = player.mo
+		if not (pMo and pMo.valid and not player.spectator) then
+			player.timetravelconsts = $ or {}
+			player.timetravelconsts.starpostStatus = false
+			player.timetravelconsts.starpostNumOld = 0
+			continue
 		end
-		player.timetravelconsts = {}
-	end
-end)
-
-addHook("PreThinkFrame", function() -- Input Handler
-	if timetravel.VERSION > VERSION then return end
-	if not timetravel.isActive then return end
-	if leveltime < starttime then return end
-
-	for player in players.iterate do
-		if not (player.mo and player.mo.valid) or player.timetravelconsts == nil then continue end
+		
+		local leveltime = leveltime
 	
+		if leveltime ~= 2 then -- Init
+			pMo.timetravel = {}
+			pMo.timetravel.isTimeWarped = false
+			player.timetravelconsts = {}
+		end
+		
+		-- Intro teleports:
+		if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then timetravel.teleport(pMo) end
+		-- Don't allow player input until the race starts.
+		if leveltime < starttime then continue end
+		
 		if player.cmd.buttons & BT_ATTACK and not player.timetravelconsts.holdingItemButton then
 			if not timetravel.isInDamageState(player) and not timetravel.canUseItem(player) and 
-				(player.mo.timetravel.teleportCooldown == nil or player.mo.timetravel.teleportCooldown <= 0) then
-				timetravel.teleport(player.mo)
+				(pMo.timetravel.teleportCooldown == nil or pMo.timetravel.teleportCooldown <= 0) then
+				timetravel.teleport(pMo)
 			elseif not timetravel.isInDamageState(player) and timetravel.canUseItem(player) and
 				player.kartstuff[k_respawn] == 0 and player.kartstuff[k_itemtype] == KITEM_THUNDERSHIELD then
 				timetravel.handleThunderShieldZap(player)
@@ -200,17 +204,17 @@ addHook("PreThinkFrame", function() -- Input Handler
 		elseif not (player.cmd.buttons & BT_ATTACK) and player.timetravelconsts.holdingItemButton then
 			player.timetravelconsts.holdingItemButton = false
 		end
-	end
-end)
+		
+		-- Checkpoint Nums:		
+		if player.starpostnum ~= player.timetravelconsts.starpostNumOld then
+			if player.starpostnum == 0 then
+				player.timetravelconsts.starpostStatus = false
+			else
+				player.timetravelconsts.starpostStatus = player.mo.timetravel.isTimeWarped
+			end
+		end
 
-addHook("PreThinkFrame", function() -- Intro
-	if timetravel.VERSION > VERSION then return end
-	if not timetravel.isActive then return end
-	if leveltime > timetravel.introTP2tic then return end
-	
-	for player in players.iterate do
-		if player.spectator and player.mo == nil or not player.mo.valid then continue end
-		if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then timetravel.teleport(player.mo) end
+		player.timetravelconsts.starpostNumOld = player.starpostnum
 	end
 end)
 
@@ -219,17 +223,19 @@ addHook("PostThinkFrame", function() -- Cooldown Handler
 	if not timetravel.isActive then return end
 
 	for player in players.iterate do
-		if player.mo and player.mo.valid and player.mo.timetravel then
-			player.mo.timetravel.teleportCooldown = $ or 0
+		local pMo = player.mo
+		if pMo and pMo.valid and pMo.timetravel then
+			local pMoTimeTravel = pMo.timetravel
+			pMoTimeTravel.teleportCooldown = $ or 0
 			
-			if player.mo.timetravel.teleportCooldown > 0 then
-				player.mo.timetravel.teleportCooldown = $ - 1
+			if pMoTimeTravel.teleportCooldown > 0 then
+				pMoTimeTravel.teleportCooldown = $ - 1
 			
-				if player.mo.timetravel.teleportCooldown == 0 then
+				if pMoTimeTravel.teleportCooldown == 0 then
 					S_StartSound(nil, sfx_kc50, player)
 					
 					local sfx = sfx_cdpast
-					if player.mo.timetravel.isTimeWarped == true then
+					if pMoTimeTravel.isTimeWarped == true then
 						sfx = sfx_cdfutr
 					end
 					
@@ -256,46 +262,20 @@ local thunderShieldBehaviour = function(player, inflictor, source)
 		timetravel.handleThunderShieldZap(player)
 	end
 end
+
 addHook("ShouldSpin", thunderShieldBehaviour)
 addHook("ShouldExplode", thunderShieldBehaviour)
 addHook("ShouldSquish", thunderShieldBehaviour)
 
-addHook("ThinkFrame", function() -- Starpost/Timewarp status link
-	if timetravel.VERSION > VERSION then return end
-	if not timetravel.isActive then return end
-
-	for player in players.iterate do
-		if player.timetravelconsts == nil then continue end
-		if player.spectator then
-			player.timetravelconsts.starpostStatus = false
-			player.timetravelconsts.starpostNumOld = 0
-			continue
-		end
-		
-		if player.starpostnum ~= player.timetravelconsts.starpostNumOld then
-			if player.starpostnum == 0 then
-				player.timetravelconsts.starpostStatus = false
-			else
-				player.timetravelconsts.starpostStatus = player.mo.timetravel.isTimeWarped
-			end
-		end
-
-		player.timetravelconsts.starpostNumOld = player.starpostnum
-	end
-
-end, MT_PLAYER)
-
 addHook("PlayerSpawn", function(player) -- Restore time warp status to mo.
 	if timetravel.VERSION > VERSION then return end
 	if not timetravel.isActive then return end
-	if not (player.mo and player.mo.valid) then return end
+	local pMo = player.mo
+	if not (pMo and pMo.valid) then return end
 	
-	if player.timetravelconsts == nil then
-		player.timetravelconsts = {}
-	end
-	
-	player.mo.timetravel = {}
-	player.mo.timetravel.isTimeWarped = player.timetravelconsts.starpostStatus or false
+	player.timetravelconsts = $ or {}
+	pMo.timetravel = {}
+	pMo.timetravel.isTimeWarped = player.timetravelconsts.starpostStatus or false
 end)
 
 -- Prevent latpoints from utterly breaking the gimmick.
