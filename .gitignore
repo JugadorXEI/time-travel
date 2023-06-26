@@ -1,0 +1,6 @@
+*.txt
+*.pk3
+oldpk3s/
+UNUSED LUA/
+Sounds/
+Sprites/
