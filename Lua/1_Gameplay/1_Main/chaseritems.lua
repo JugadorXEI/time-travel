@@ -52,7 +52,7 @@ local types = {
 	MT_SPB
 }
 
-local MT_PLAYERRETICULE_TT = freeslot("MT_PLAYERRETICULE_TT")
+freeslot("MT_PLAYERRETICULE_TT")
 mobjinfo[MT_PLAYERRETICULE_TT] = {
 	spawnstate = S_PLAYERRETICULE,
 	spawnhealth = 1000,
