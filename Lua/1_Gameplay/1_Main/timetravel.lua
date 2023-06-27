@@ -311,16 +311,6 @@ addHook("PlayerSpawn", function(player) -- Restore time warp status to mo.
 	pMo.timetravel.isTimeWarped = player.timetravelconsts.starpostStatus or false
 end)
 
--- Prevent latpoints from utterly breaking the gimmick.
-addHook("MobjDeath", function(target)
-	if timetravel.VERSION > VERSION then return end
-	if not timetravel.isActive then return end
-	
-	local player = target.player
-	if not (target and player and not player.spectator) then return end
-	if player.kmp_respawn then player.kmp_respawn = nil end
-end, MT_PLAYER)
-
 addHook("MapChange", function(mapnum)
 	if timetravel.VERSION > VERSION then return end
 	
