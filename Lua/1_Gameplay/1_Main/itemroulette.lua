@@ -4,6 +4,11 @@ local ROULETTE_VERSION = 2
 if timetravel.ROULETTE_VERSION == nil or timetravel.ROULETTE_VERSION < ROULETTE_VERSION then
 
 local defaultItemOddsCalcFunc = nil
+local k_position = k_position
+local k_roulettetype = k_roulettetype
+
+local R_PointToDist2 = R_PointToDist2
+local G_BattleGametype = G_BattleGametype
 
 --[[
 Dear XItem modder,
@@ -14,14 +19,18 @@ Thank you.
 ]]
 timetravel.customPDIcalc = function(p, p2, pingame)
 	local pdis = 0
+	local pmo = p.mo
+	local pks = p.kartstuff
+	
 	for p2 in players.iterate do
-		if p.mo and p2 and (not p2.spectator) and p2.mo and (p2.kartstuff[k_position] ~= 0) and p2.kartstuff[k_position] < p.kartstuff[k_position] then
-			local p2Mo = p2.mo
-			if p.mo.timetravel.isTimeWarped ~= p2Mo.timetravel.isTimeWarped and p2Mo.linkedItem then
-				p2Mo = p2Mo.linkedItem
+		local p2mo = p2.mo
+		local p2ks = p2.kartstuff
+		if pmo and p2 and (not p2.spectator) and p2mo and (p2ks[k_position] ~= 0) and p2ks[k_position] < pks[k_position] then
+			if pmo.timetravel.isTimeWarped ~= p2mo.timetravel.isTimeWarped and p2mo.linkedItem then
+				p2mo = p2mo.linkedItem
 			end
 		
-			pdis = $ + R_PointToDist2(0, p.mo.x, R_PointToDist2(p.mo.y, p.mo.z, p2Mo.y, p2Mo.z), p2Mo.x) / mapobjectscale * (pingame - p2.kartstuff[k_position]) / max(1, ((pingame - 1) * (pingame + 1) / 3))
+			pdis = $ + R_PointToDist2(0, pmo.x, R_PointToDist2(pmo.y, pmo.z, p2mo.y, p2mo.z), p2mo.x) / mapobjectscale * (pingame - p2ks[k_position]) / max(1, ((pingame - 1) * (pingame + 1) / 3))
 		end
 	end
 	

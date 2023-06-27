@@ -12,18 +12,47 @@ local MT_JAWZ = MT_JAWZ
 local MT_SPB = MT_SPB
 local MT_PLAYERRETICULE = MT_PLAYERRETICULE
 local RING_DIST = RING_DIST
+local GT_TEAMMATCH = GT_TEAMMATCH
+local GT_CTF = GT_CTF
 
 local MF_NOBLOCKMAP = MF_NOBLOCKMAP
 local MF_NOCLIP = MF_NOCLIP
 local MF_NOGRAVITY = MF_NOGRAVITY
 local MF_DONTENCOREMAP = MF_DONTENCOREMAP
 
+local S_PLAYERRETICULE = S_PLAYERRETICULE
+local S_NULL = S_NULL
+
+local FF_FULLBRIGHT = FF_FULLBRIGHT
+
+local k_position = k_position
+local k_bumper = k_bumper
+local k_hyudorotimer = k_hyudorotimer
+local k_jawztargetdelay = k_jawztargetdelay
+local k_itemheld = k_itemheld
+local k_itemtype = k_itemtype
+
+local ANGLE_180 = ANGLE_180
+local ANGLE_67h = ANGLE_67h
+local ANGLE_45 = ANGLE_45
+
+local sfx_s3k89 = sfx_s3k89
+
+local abs = abs
+local R_PointToAngle2 = R_PointToAngle2
+local P_AproxDistance = P_AproxDistance
+local AngleFixed = AngleFixed
+local P_RemoveMobj = P_RemoveMobj
+local S_StopSoundByID = S_StopSoundByID
+local S_StartSound = S_StartSound
+local P_KillMobj = P_KillMobj
+
 local types = {
 	MT_JAWZ,
 	MT_SPB
 }
 
-freeslot("MT_PLAYERRETICULE_TT")
+local MT_PLAYERRETICULE_TT = freeslot("MT_PLAYERRETICULE_TT")
 mobjinfo[MT_PLAYERRETICULE_TT] = {
 	spawnstate = S_PLAYERRETICULE,
 	spawnhealth = 1000,
@@ -41,9 +70,10 @@ timetravel.K_FindJawzTargetEX = function(actor, source)
 	for target in players.iterate do
 		local thisang
 		local targetMo = target.mo
+		local targetPks = target.kartstuff
 		
 		if target.spectator or not (targetMo and targetMo.valid) or targetMo.health <= 0 or target == source or
-			target.kartstuff[k_hyudorotimer] or
+			targetPks[k_hyudorotimer] or
 			((gametype == GT_TEAMMATCH or gametype == GT_CTF) and source.ctfteam == target.ctfteam) then
 			continue 
 		end
@@ -60,7 +90,7 @@ timetravel.K_FindJawzTargetEX = function(actor, source)
 		if thisang > ANGLE_180 then
 			thisang = abs(thisang)
 		end
-
+		
 		-- Jawz only go after the person directly ahead of you in race... sort of literally now!
 		if gametype == GT_RACE then
 		
@@ -68,18 +98,18 @@ timetravel.K_FindJawzTargetEX = function(actor, source)
 			-- print((thisang / ANG1) + " > " + (ANGLE_67h / ANG1))
 			if thisang > ANGLE_67h then continue end
 			-- Don't pay attention to people who aren't above your position
-			if target.kartstuff[k_position] >= source.kartstuff[k_position] then continue end
+			if targetPks[k_position] >= source.kartstuff[k_position] then continue end
 				
-			if best == -1 or target.kartstuff[k_position] > best then
+			if best == -1 or targetPks[k_position] > best then
 				wtarg = target
-				best = target.kartstuff[k_position]
+				best = targetPks[k_position]
 			end
 		
 		else
 			local thisdist, thisavg
 			
 			if thisang > ANGLE_45 then continue end -- Don't go for people who are behind you
-			if target.kartstuff[k_bumper] <= 0 then continue end -- Don't pay attention to dead players	
+			if targetPks[k_bumper] <= 0 then continue end -- Don't pay attention to dead players	
 			if abs(targetMo.z - (actor.z + actor.momz)) > RING_DIST / 8 then continue end -- Z pos too high/low
 
 			thisdist = P_AproxDistance(targetMo.x - (actor.x + actor.momx), targetMo.y - (actor.y + actor.momy))
@@ -114,7 +144,8 @@ local function createPlayerReticule(target, extra)
 end
 
 addHook("MobjThinker", function(mo)
-	if not (mo.target and mo.target.health) or 
+	local target = mo.target
+	if not (target and target.health) or 
 		(mo.extravalue == 1 and not mo.tracer) then
 		P_RemoveMobj(mo)
 		return
@@ -123,20 +154,20 @@ addHook("MobjThinker", function(mo)
 	mo.frame = FF_FULLBRIGHT | ((leveltime % 10) / 2)
 	if mo.extravalue2 then mo.frame = $ + 5 end
 	
-	local didTargetsChange = (mo.lastTarget and mo.lastTarget ~= mo.target)
+	local didTargetsChange = (mo.lastTarget and mo.lastTarget ~= target)
 	
 	-- This is technically a hack, echoes.lua should handle this.
 	-- But I'm not implementing a whole system for that. Bear with me.
 	local movementfunc = P_MoveOrigin
 	if didTargetsChange then movementfunc = P_SetOrigin end
 	
-	movementfunc(mo, mo.target.x, mo.target.y, mo.target.z)
+	movementfunc(mo, target.x, target.y, target.z)
 	if mo.linkedItem and didTargetsChange then
 		local xOffset, yOffset = timetravel.determineTimeWarpPosition(mo)
-		movementfunc(mo.linkedItem, mo.target.x + xOffset, mo.target.y + yOffset, mo.target.z)
+		movementfunc(mo.linkedItem, target.x + xOffset, target.y + yOffset, target.z)
 	end
 	
-	mo.lastTarget = mo.target
+	mo.lastTarget = target
 
 end, MT_PLAYERRETICULE_TT)
 
@@ -144,13 +175,15 @@ end, MT_PLAYERRETICULE_TT)
 -- yes, it's a port of another piece of hardcode.
 timetravel.JawzTargettingLogic = function(player)
 
+	local pks = player.kartstuff
+
 	-- Stop the original targetting sound if it happens.
 	-- Can't stop local sounds. Sorry if you hear 'em, outta my hands.
-	if player.kartstuff[k_jawztargetdelay] == 5 then
+	if pks[k_jawztargetdelay] == 5 then
 		S_StopSoundByID(player.mo, sfx_s3k89)
 	end
 
-	if player.kartstuff[k_itemtype] == KITEM_JAWZ and player.kartstuff[k_itemheld] then
+	if pks[k_itemtype] == KITEM_JAWZ and pks[k_itemheld] then
 		local lasttarg = player.timetravelconsts.lastJawzTarget
 		local targ, ret
 
@@ -159,7 +192,8 @@ timetravel.JawzTargettingLogic = function(player)
 			player.timetravelconsts.jawzTargetDelay = $ - 1
 		else targ = timetravel.K_FindJawzTargetEX(player.mo, player) end
 
-		if not (targ and targ.mo and targ.mo.valid) then
+		local targMo = targ.mo
+		if not (targ and targMo and targMo.valid) then
 		
 			player.timetravelconsts.lastJawzTarget = -1
 			player.timetravelconsts.jawzTargetDelay = 0
@@ -173,13 +207,13 @@ timetravel.JawzTargettingLogic = function(player)
 		end
 		
 		if not (player.timetravelconsts.jawzReticule and player.timetravelconsts.jawzReticule.valid) then
-			local reticule = createPlayerReticule(targ.mo)
+			local reticule = createPlayerReticule(targMo)
 			reticule.extravalue = 1
 			reticule.tracer = player.mo
 			reticule.color = player.skincolor
 			player.timetravelconsts.jawzReticule = reticule
 		else
-			player.timetravelconsts.jawzReticule.target = targ.mo
+			player.timetravelconsts.jawzReticule.target = targMo
 		end
 
 		if (#targ - #players) ~= lasttarg then
@@ -187,7 +221,7 @@ timetravel.JawzTargettingLogic = function(player)
 			if timetravel.isDisplayPlayer(player) ~= -1 or timetravel.isDisplayPlayer(targ) ~= -1 then
 				S_StartSound(nil, sfx_s3k89)
 			else
-				S_StartSound(targ.mo, sfx_s3k89)
+				S_StartSound(targMo, sfx_s3k89)
 			end
 
 			player.timetravelconsts.lastJawzTarget = #targ - #players
@@ -213,54 +247,59 @@ addHook("MobjSpawn", function(mo)
 	mo.extravalue1 = 69
 end, MT_JAWZ)
 
-for i = 1, #types do
-	addHook("MobjThinker", function(mo)
-		if timetravel.CHASER_VERSION > CHASER_VERSION then return end
-		if not timetravel.isActive then return end
-		if not mo.valid then return end
-		if mo.timetravel == nil then mo.timetravel = {} end
-		
-		local justSpawned = false
-		if mo.timetravel.isTimeWarped == nil then
-			mo.timetravel.isTimeWarped = mo.target.player.mo.timetravel.isTimeWarped
-			if mo.type == MT_JAWZ and mo.tracer == nil then
-				local owner = mo.target
-				local ownerPlayer
-				if owner then ownerPlayer = owner.player end
-				if owner and ownerPlayer then
-					local finalJawzTarget = timetravel.K_FindJawzTargetEX(owner, ownerPlayer)
-					if finalJawzTarget then mo.tracer = finalJawzTarget.mo end
-				end
+addHook("MobjThinker", function(mo)
+	if timetravel.CHASER_VERSION > CHASER_VERSION then return end
+	if not timetravel.isActive then return end
+	local isItemTrackerType = false
+	for i = 1, #types do
+		isItemTrackerType = (types[i] == mo.type)
+		if isItemTrackerType then break end
+	end
+	if not isItemTrackerType then return end
+	if not mo.target then return end -- Ownerless item, away!
+	if mo.timetravel == nil then mo.timetravel = {} end
+	
+	local itemTarget = mo.tracer
+	
+	local justSpawned = false
+	if mo.timetravel.isTimeWarped == nil then
+		mo.timetravel.isTimeWarped = mo.target.player.mo.timetravel.isTimeWarped
+		if mo.type == MT_JAWZ and itemTarget == nil then
+			local owner = mo.target
+			local ownerPlayer
+			if owner then ownerPlayer = owner.player end
+			if owner and ownerPlayer then
+				local finalJawzTarget = timetravel.K_FindJawzTargetEX(owner, ownerPlayer)
+				if finalJawzTarget then itemTarget = finalJawzTarget.mo end
 			end
-			justSpawned = true
 		end
+		justSpawned = true
+	end
 
-		if justSpawned then return end
-		if mo.type == MT_SPB and mo.threshold ~= 0 then return end
-		-- Chasing!
-		
-		local itemTarget = mo.tracer
-		if itemTarget == nil then return end
-		
-		if mo.type == MT_JAWZ then
-			if mo.health > 0 and mo.reticule == nil then
-				local reticule = createPlayerReticule(itemTarget, true)
-				reticule.color = mo.cvmem
-				reticule.extravalue = 1
-				reticule.tracer = mo
-				mo.reticule = reticule
-			elseif mo.health <= 0 and (mo.reticule and mo.reticule.valid) then
-				P_KillMobj(mo.reticule)
-				mo.reticule = nil
-			end
+	if justSpawned then return end
+	if mo.type == MT_SPB and mo.threshold ~= 0 then return end
+	-- Chasing!
+	
+	if itemTarget == nil then return end
+	
+	if mo.type == MT_JAWZ then
+		if mo.health > 0 and mo.reticule == nil then
+			local reticule = createPlayerReticule(itemTarget, true)
+			reticule.color = mo.cvmem
+			reticule.extravalue = 1
+			reticule.tracer = mo
+			mo.reticule = reticule
+		elseif mo.health <= 0 and (mo.reticule and mo.reticule.valid) then
+			P_KillMobj(mo.reticule)
+			mo.reticule = nil
 		end
-		
-		if mo.timetravel.isTimeWarped ~= itemTarget.timetravel.isTimeWarped then
-			timetravel.changePositions(mo)
-		end
-		
-	end, types[i])
-end
+	end
+	
+	if mo.timetravel.isTimeWarped ~= itemTarget.timetravel.isTimeWarped then
+		timetravel.changePositions(mo)
+	end
+	
+end)
 
 local reticuleState = S_PLAYERRETICULE
 addHook("MapChange", function(mapnum)
