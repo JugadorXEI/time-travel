@@ -38,6 +38,7 @@ local hudCachePatch = nil
 local hudDraw = nil
 local hudDrawScaled = nil
 local hudPatchExists = nil
+local hudGetColormap = nil
 
 local kp_wantedreticle = nil
 local cachedPatches = {}

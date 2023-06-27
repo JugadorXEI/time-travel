@@ -189,7 +189,7 @@ timetravel.handleThunderShieldZap = function(player)
 						linkedItem.y - thunderradius, linkedItem.y + thunderradius)
 end
 
-addHook("PreThinkFrame", function() -- Init
+addHook("PreThinkFrame", function()
 	if timetravel.VERSION > VERSION then return end
 	if not timetravel.isActive then return end
 	
@@ -197,14 +197,18 @@ addHook("PreThinkFrame", function() -- Init
 		local pMo = player.mo
 		if not (pMo and pMo.valid and not player.spectator) then
 			player.timetravelconsts = $ or {}
-			player.timetravelconsts.starpostStatus = false
-			player.timetravelconsts.starpostNumOld = 0
+			player.timetravelconsts.spectatorTimer = $ or 0
+			player.timetravelconsts.spectatorTimer = $ + 1
+			
+			if player.timetravelconsts.spectatorTimer == TICRATE then
+				player.timetravelconsts.starpostStatus = false
+				player.timetravelconsts.starpostNumOld = 0
+			end
 			continue
 		end
 		
 		local leveltime = leveltime
-	
-		if leveltime ~= 2 then -- Init
+		if leveltime == 2 then -- Init
 			pMo.timetravel = {}
 			pMo.timetravel.isTimeWarped = false
 			player.timetravelconsts = {}
@@ -241,6 +245,7 @@ addHook("PreThinkFrame", function() -- Init
 		end
 
 		player.timetravelconsts.starpostNumOld = player.starpostnum
+		player.timetravelconsts.spectatorTimer = 0
 	end
 end)
 
