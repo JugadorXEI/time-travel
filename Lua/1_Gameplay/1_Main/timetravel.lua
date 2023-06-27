@@ -199,7 +199,7 @@ addHook("PreThinkFrame", function()
 			player.timetravelconsts = $ or {}
 			player.timetravelconsts.spectatorTimer = $ or 0
 			
-			if player.timetravelconsts.spectatorTimer > TICRATE then
+			if player.timetravelconsts.spectatorTimer >= TICRATE then
 				player.timetravelconsts.starpostStatus = false
 				player.timetravelconsts.starpostNumOld = 0
 			else
