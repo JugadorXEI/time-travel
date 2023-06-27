@@ -8,7 +8,25 @@ local FRACUNIT = FRACUNIT
 local TICRATE = TICRATE
 local RING_DIST = RING_DIST
 local KITEM_THUNDERSHIELD = KITEM_THUNDERSHIELD
+local BT_ATTACK = BT_ATTACK
 local sfx_kc50 = sfx_kc50
+local k_itemtype = k_itemtype
+local k_respawn = k_respawn
+
+local cos = cos
+local sin = sin
+local ipairs = ipairs
+local pcall = pcall
+local tonumber = tonumber
+local FixedMul = FixedMul
+local P_SetOrigin = P_SetOrigin
+local P_RandomChance = P_RandomChance
+local R_PointToDist2 = R_PointToDist2
+local S_StopMusic = S_StopMusic
+local S_StartSound = S_StartSound
+local P_KillMobj = P_KillMobj
+local P_RemoveMobj = P_RemoveMobj
+local COM_BufInsertText = COM_BufInsertText
 
 timetravel.teleportCooldown = TICRATE
 local starttime = 6*TICRATE + 3*TICRATE/4
@@ -25,7 +43,8 @@ timetravel.backroomsZ = 0
 
 timetravel.hookFuncs = {}
 
-freeslot("sfx_ttshif", "sfx_ttshit", "sfx_ttfail", "sfx_ttfrag", "sfx_cdpast", "sfx_cdfutr")
+local sfx_ttshif, sfx_ttshit, sfx_ttfail, sfx_ttfrag, sfx_cdpast, sfx_cdfutr =
+	freeslot("sfx_ttshif", "sfx_ttshit", "sfx_ttfail", "sfx_ttfrag", "sfx_cdpast", "sfx_cdfutr")
 
 sfxinfo[sfx_ttshif] = {
 	singular = false,
@@ -87,8 +106,15 @@ timetravel.changePositions = function(mo, dontrunextralogic)
 			else
 				S_StartSound(mo, sfx_ttfrag)
 				if mo.linkedItem then S_StartSound(mo.linkedItem, sfx_ttfrag) end
-				P_DamageMobj(mo, nil, nil, 10000) -- DEATH.
-				-- TODO: fix orbitals here crashing the game.
+				P_KillMobj(mo) -- DEATH.
+				
+				-- Destroy everything in the hnext chain.
+				-- (Orbinals, 'nanas, Rocket Sneakers)
+				local hNext = mo.hnext
+				while hNext and hNext.valid do
+					P_RemoveMobj(hNext)
+					hNext = mo.hnext
+				end
 			end
 		end
 	end
@@ -129,7 +155,6 @@ timetravel.addTimeTravelHook = function(func)
 end
 
 timetravel.runHooks = function(mo)
-
 	local result = nil
 	for _, v in ipairs(timetravel.hookFuncs) do
 		-- Don't let people's awful code break teleporting, please.
@@ -149,6 +174,7 @@ timetravel.handleThunderShieldZap = function(player)
 	if not (mobj and mobj.valid) then return end
 	
 	local thunderradius = RING_DIST/4
+	local linkedItem = mobj.linkedItem
 	
 	searchBlockmap("objects", function(refmobj, foundmobj)
 		if FixedHypot(FixedHypot(refmobj.x - foundmobj.x, refmobj.y - foundmobj.y),
@@ -159,8 +185,8 @@ timetravel.handleThunderShieldZap = function(player)
 		
 		timetravel.teleport(foundmobj)
 		
-	end, mobj.linkedItem, 	mobj.linkedItem.x - thunderradius, mobj.linkedItem.x + thunderradius,
-							mobj.linkedItem.y - thunderradius, mobj.linkedItem.y + thunderradius)
+	end, linkedItem, 	linkedItem.x - thunderradius, linkedItem.x + thunderradius,
+						linkedItem.y - thunderradius, linkedItem.y + thunderradius)
 end
 
 addHook("PreThinkFrame", function() -- Init
@@ -283,8 +309,9 @@ addHook("MobjDeath", function(target)
 	if timetravel.VERSION > VERSION then return end
 	if not timetravel.isActive then return end
 	
-	if not (target and target.player and not target.player.spectator) then return end
-	if target.player.kmp_respawn then target.player.kmp_respawn = nil end
+	local player = target.player
+	if not (target and player and not player.spectator) then return end
+	if player.kmp_respawn then player.kmp_respawn = nil end
 end, MT_PLAYER)
 
 addHook("MapChange", function(mapnum)
