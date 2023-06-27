@@ -198,12 +198,14 @@ addHook("PreThinkFrame", function()
 		if not (pMo and pMo.valid and not player.spectator) then
 			player.timetravelconsts = $ or {}
 			player.timetravelconsts.spectatorTimer = $ or 0
-			player.timetravelconsts.spectatorTimer = $ + 1
 			
-			if player.timetravelconsts.spectatorTimer == TICRATE then
+			if player.timetravelconsts.spectatorTimer > TICRATE then
 				player.timetravelconsts.starpostStatus = false
 				player.timetravelconsts.starpostNumOld = 0
+			else
+				player.timetravelconsts.spectatorTimer = $ + 1
 			end
+			
 			continue
 		end
 		
