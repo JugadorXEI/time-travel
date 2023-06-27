@@ -18,6 +18,29 @@ local SKINCOLOR_CSUPER5 = SKINCOLOR_CSUPER5
 local V_FLIP = V_FLIP
 local V_HUDTRANSHALF = V_HUDTRANSHALF
 local V_HUDTRANS = V_HUDTRANS
+local k_position = k_position
+local k_bumper = k_bumper
+local k_hyudorotimer = k_hyudorotimer
+
+local CV_FindVar = CV_FindVar
+local FixedDiv = FixedDiv
+local FixedMul = FixedMul
+local K_IsPlayerWanted = K_IsPlayerWanted
+local min = min
+local table_insert = table.insert
+
+local areHUDfunctionsLocalized = false
+local hudEnable = hud.enable
+local hudEnabled = hud.enabled
+local hudDisable = hud.disable
+local hudAdd = hud.add
+local hudCachePatch = nil
+local hudDraw = nil
+local hudDrawScaled = nil
+local hudPatchExists = nil
+
+local kp_wantedreticle = nil
+local cachedPatches = {}
 
 local BASEVIDWIDTH = 320
 local BASEVIDHEIGHT = 200
@@ -48,7 +71,7 @@ local function turnCommaDelimitedStringIntoTable(string)
 		local c = string:sub(i,i)
 		
 		if c == ',' then
-			table.insert(tableVar, newString)
+			table_insert(tableVar, newString)
 			numThingsAdded = $ + 1
 			newString = ""
 		else
@@ -57,11 +80,30 @@ local function turnCommaDelimitedStringIntoTable(string)
 	end
 
 	if newString ~= "" then
-		table.insert(tableVar, newString);
+		table_insert(tableVar, newString);
 		numThingsAdded = $ + 1
 	end
 
 	return tableVar, numThingsAdded
+end
+
+local function localizeHUDfunctions(v)
+	hudCachePatch = v.cachePatch
+	hudDraw = v.draw
+	hudDrawScaled = v.drawScaled
+	hudPatchExists = v.patchExists
+	hudGetColormap = v.getColormap
+	kp_wantedreticle = hudCachePatch("MMAPWANT")
+	areHUDfunctionsLocalized = true
+end
+
+local function cacheThenStorePatch(patch)
+	cachedPatches[patch] = hudCachePatch(patch)
+	return cachedPatches[patch]
+end
+
+local function getOrCachePatch(patch)
+	return cachedPatches[patch] or cacheThenStorePatch(patch)
 end
 
 minimaplib.isMinimapLibActive = false
@@ -75,7 +117,7 @@ minimaplib.getMinimapPatchString = function()
 end
 
 minimaplib.addHeadHook = function(func)
-	table.insert(headhooks, func)
+	table_insert(headhooks, func)
 end
 
 local function handleHeadHooks(v, mo, moX, moY, flags, scale, patch, colormap)
@@ -157,6 +199,7 @@ end
 
 local function getMinimapTransparency()
 	local trans = 0
+	local leveltime = leveltime
 	
 	if leveltime > 105 then
 		trans = CV_FindVar("kartminimap").value
@@ -180,9 +223,9 @@ local function drawPlayerMinimapHead(v, mo, x, y, flags, minimap, --[[OPTIONAL:]
 	end
 	
 	if patch == nil then -- assume this is a player.
-		patch = v.cachePatch(skins[mo.skin].facemmap)
+		patch = getOrCachePatch(skins[mo.skin].facemmap)
 	else 
-		patch = v.cachePatch(patch)
+		patch = getOrCachePatch(patch)
 	end
 	
 	if patch == nil then return end
@@ -202,25 +245,24 @@ local function drawPlayerMinimapHead(v, mo, x, y, flags, minimap, --[[OPTIONAL:]
 	local minimapYPos 	= moYpos + ((y + minimap.height / 2 - (patch.height / 2))<<FRACBITS)
 	
 	if not mo.color then
-		v.drawScaled(minimapXPos, minimapYPos, scale, patch, flags)
+		hudDrawScaled(minimapXPos, minimapYPos, scale, patch, flags)
 	else
+		local player = mo.player
 		if colormap == nil then
 			if mo.colorized then
-				colormap = v.getColormap(TC_RAINBOW, mo.color)
+				colormap = hudGetColormap(TC_RAINBOW, mo.color)
 			else
-				colormap = v.getColormap(mo.skin, mo.color)
+				colormap = hudGetColormap(mo.skin, mo.color)
 			end
 		end
 
-		v.drawScaled(minimapXPos, minimapYPos, scale, patch, flags, colormap)
+		hudDrawScaled(minimapXPos, minimapYPos, scale, patch, flags, colormap)
 		
 		-- if SPB-running or wanted, show it.
-		if mo.player and mo.player.valid and (spbplace == mo.player.kartstuff[k_position] or K_IsPlayerWanted(mo.player)) then
-			local kp_wantedreticle = v.cachePatch("MMAPWANT")
-			v.drawScaled(minimapXPos - (4<<FRACBITS), minimapYPos  - (4<<FRACBITS), scale, kp_wantedreticle, flags)
+		if player and player.valid and (spbplace == player.kartstuff[k_position] or K_IsPlayerWanted(mo.player)) then
+			hudDrawScaled(minimapXPos - (4<<FRACBITS), minimapYPos - (4<<FRACBITS), scale, kp_wantedreticle, flags)
 		end
 	end
-	
 end
 
 local function minimapHook(v, stplyr, cam)
@@ -230,9 +272,10 @@ local function minimapHook(v, stplyr, cam)
 	if stplyr ~= displayplayers[0] then return end
 	-- if stplyr.mo == nil or stplyr.spectator == true then return end
 	if minimapPatchString == nil then return end
-	if not v.patchExists(minimapPatchString) then return end
+	if not areHUDfunctionsLocalized then localizeHUDfunctions(v) end
+	if not hudPatchExists(minimapPatchString) then return end
 	
-	local minimap = v.cachePatch(minimapPatchString)
+	local minimap = hudCachePatch(minimapPatchString)
 	
 	local patchX, patchY = minimap.width, minimap.height
 	local minimapX, minimapY = getMinimapPosition()
@@ -247,12 +290,12 @@ local function minimapHook(v, stplyr, cam)
 	local minimapTrans = getMinimapTransparency()
 	local minimapFlags = snaptype | minimapTrans
 	
-	local minimapColormap = v.getColormap(TC_BOSS, leveltime % SKINCOLOR_CSUPER5)
+	local minimapColormap = hudGetColormap(TC_BOSS, leveltime % SKINCOLOR_CSUPER5)
 	
 	if encoremode then
-		v.draw(minimapX+patchX, minimapY, minimap, minimapFlags|V_FLIP)
+		hudDraw(minimapX+patchX, minimapY, minimap, minimapFlags|V_FLIP)
 	else
-		v.draw(minimapX, minimapY, minimap, minimapFlags)
+		hudDraw(minimapX, minimapY, minimap, minimapFlags)
 	end
 	
 	-- Drawing the heads
@@ -269,23 +312,27 @@ local function minimapHook(v, stplyr, cam)
 	minimapY = $ - minimap.topoffset
 	
 	for player in players.iterate do
-		if not (player.mo and player.mo.valid) or player.spectator == true then continue end
+		local pMo = player.mo
+		if not (pMo and pMo.valid) or player.spectator == true then continue end
 		
 		if player ~= displayplayers[0] or splitscreen then
-			if gametype == GT_MATCH and player.kartstuff[k_bumper] <= 0 then continue end
+			local pks = player.kartstuff
+			if gametype == GT_MATCH and pks[k_bumper] <= 0 then continue end
 			
-			if player.kartstuff[k_hyudorotimer] > 0 then
-				if not ((player.kartstuff[k_hyudorotimer] < 1 * TICRATE / 2 or
-					player.kartstuff[k_hyudorotimer] > hyudorotime - (1 * TICRATE / 2)) and
+			if pks[k_hyudorotimer] > 0 then
+				if not ((pks[k_hyudorotimer] < 1 * TICRATE / 2 or
+					pks[k_hyudorotimer] > hyudorotime - (1 * TICRATE / 2)) and
 					leveltime & 1 == 0)
-						continue end
+					
+					continue
+				end
 			end
 			
 			for i = 0, splitscreen do
 				if displayplayers[i] ~= nil and displayplayers[i] == player then continue end
 			end
 
-			drawPlayerMinimapHead(v, player.mo, minimapX, minimapY, minimapFlags, minimap)
+			drawPlayerMinimapHead(v, pMo, minimapX, minimapY, minimapFlags, minimap)
 		end
 	end
 	
@@ -298,7 +345,7 @@ local function minimapHook(v, stplyr, cam)
 		drawPlayerMinimapHead(v, displayplayers[i].mo, minimapX, minimapY, minimapFlags, minimap)
 	end
 end
-hud.add(minimapHook, "game")
+hudAdd(minimapHook, "game")
 
 addHook("ThinkFrame", function()
 	if minimaplib.VERSION > VERSION then return end
@@ -316,26 +363,28 @@ addHook("ThinkFrame", function()
 
 	if customBoundaries or customMinimap then
 		minimaplib.isMinimapLibActive = true
-		if hud.enabled("minimap") then
-			hud.disable("minimap")
+		if hudEnabled("minimap") then
+			hudDisable("minimap")
 		end
 	end
 
 	if not minimaplib.isMinimapLibActive then
-		if not hud.enabled("minimap") then
-			hud.enable("minimap")
+		if not hudEnabled("minimap") then
+			hudEnable("minimap")
 		end
 		return
 	end
 
 	if not customBoundaries then
 		for vertex in vertexes.iterate do
-			if vertex.x < minX then minX = vertex.x
-			elseif vertex.x > maxX then maxX = vertex.x
+			local vX, vY = vertex.x, vertex.y
+			
+			if vX < minX then minX = vX
+			elseif vX > maxX then maxX = vX
 			end
 			
-			if vertex.y < minY then minY = vertex.y
-			elseif vertex.y > maxY then maxY = vertex.y
+			if vY < minY then minY = vY
+			elseif vY > maxY then maxY = vY
 			end
 		end
 
@@ -352,9 +401,9 @@ end)
 addHook("NetVars", function(network)
 	minimaplib.isMinimapLibActive = network(minimaplib.isMinimapLibActive)
 	if minimaplib.isMinimapLibActive then
-		hud.disable("minimap")
+		hudDisable("minimap")
 	else
-		hud.enable("minimap")
+		hudEnable("minimap")
 	end
 	minimapPatchString = network(minimapPatchString)
 	minX = network(minX)

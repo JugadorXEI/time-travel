@@ -11,6 +11,28 @@ local FRACUNIT = FRACUNIT
 local TICRATE = TICRATE
 local ROULETTE_ENDTIC = TICRATE*3
 local RING_DIST = RING_DIST
+local KITEM_SNEAKER = KITEM_SNEAKER
+local KITEM_ROCKETSNEAKER = KITEM_ROCKETSNEAKER
+local KITEM_POGOSPRING = KITEM_POGOSPRING
+
+local k_spinouttimer = k_spinouttimer
+local k_squishedtimer = k_squishedtimer
+local k_itemroulette = k_itemroulette
+local k_itemtype = k_itemtype
+local k_itemheld = k_itemheld
+local k_eggmanheld = k_eggmanheld
+local k_eggmanexplode = k_eggmanexplode
+local k_rocketsneakertimer = k_rocketsneakertimer
+local k_curshield = k_curshield
+local k_growshrinktimer = k_growshrinktimer
+local k_pogospring = k_pogospring
+
+local P_PlayerInPain = P_PlayerInPain
+local P_IsObjectOnGround = P_IsObjectOnGround
+local FixedMul = FixedMul
+local FixedDiv = FixedDiv
+local FixedSqrt = FixedSqrt
+local table_insert = table.insert
 
 timetravel.turnCommaDelimitedStringIntoTable = function(string)
 	if string == nil or string == "" then
@@ -24,7 +46,7 @@ timetravel.turnCommaDelimitedStringIntoTable = function(string)
 		local c = string:sub(i,i)
 		
 		if c == ',' then
-			table.insert(tableVar, newString)
+			table_insert(tableVar, newString)
 			numThingsAdded = $ + 1
 			newString = ""
 		else
@@ -33,7 +55,7 @@ timetravel.turnCommaDelimitedStringIntoTable = function(string)
 	end
 
 	if newString ~= "" then
-		table.insert(tableVar, newString)
+		table_insert(tableVar, newString)
 		numThingsAdded = $ + 1
 	end
 
