@@ -258,18 +258,21 @@ addHook("MobjThinker", function(mo)
 		if isItemTrackerType then break end
 	end
 	if not isItemTrackerType then return end
-	if not mo.target then return end -- Ownerless item, away!
 	if mo.timetravel == nil then mo.timetravel = {} end
 	
 	local itemTarget = mo.tracer
 	
 	local justSpawned = false
 	if mo.timetravel.isTimeWarped == nil then
-		mo.timetravel.isTimeWarped = mo.target.player.mo.timetravel.isTimeWarped
+		local owner = mo.target
+		if owner then
+			mo.timetravel.isTimeWarped = owner.player.mo.timetravel.isTimeWarped
+		end
+			
 		if mo.type == MT_JAWZ and itemTarget == nil then
-			local owner = mo.target
-			local ownerPlayer
+			local ownerPlayer = nil
 			if owner then ownerPlayer = owner.player end
+			
 			if owner and ownerPlayer then
 				local finalJawzTarget = timetravel.K_FindJawzTargetEX(owner, ownerPlayer)
 				if finalJawzTarget then itemTarget = finalJawzTarget.mo end
