@@ -1,5 +1,6 @@
 *.txt
 *.pk3
+*.pk3.bak
 oldpk3s/
 UNUSED LUA/
 Sounds/
