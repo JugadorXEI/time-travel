@@ -193,9 +193,9 @@ timetravel.JawzTargettingLogic = function(player)
 		else targ = timetravel.K_FindJawzTargetEX(player.mo, player) end
 
 		local targMo = nil
-		if targ.mo then targMo = targ.mo end
+		if targ and targ.mo and targ.mo.valid then targMo = targ.mo end
 		
-		if not (targ and targMo and targMo.valid) then
+		if not targMo then
 		
 			player.timetravelconsts.lastJawzTarget = -1
 			player.timetravelconsts.jawzTargetDelay = 0
