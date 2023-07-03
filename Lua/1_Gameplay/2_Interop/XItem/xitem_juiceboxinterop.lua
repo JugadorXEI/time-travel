@@ -1,6 +1,14 @@
+-- The optimization momento certificado.
+local KITEM_SNEAKER = KITEM_SNEAKER
+local TICRATE = TICRATE
+local k_itemblink = k_itemblink
+local k_itemamount = k_itemamount
+local min = min
+-- No more opti.
+
 local xitemHooked = false
 
-local VERSION = 1
+local VERSION = 2
 local JB_NAMESPACE = "JUICEBOX"
 
 local function xitemHandler()
@@ -19,6 +27,7 @@ local function xitemHandler()
 	{
 		lib = "By Tyron - XItem interop by JugadorXEI",
 		ver = VERSION,
+		-- Fixes XItem stealing the Player Arrow references creating an infinite loop when Juicebox loads them back.
 		playerArrowSpawn = function(arrowMo, playerMo)
 			if G_BattleGametype() then return end
 			if not (JUICEBOX and JUICEBOX.value) then return end
@@ -39,6 +48,16 @@ local function xitemHandler()
 			-- P_KillMobj(arrowMo) -- Let the hook handle this.
 			-- This results in two MT_XITEMPLAYERARROWs being created but fuck it we ball.
 			return true
+		end,
+		-- Fixes Juicebox balance not giving two sneakers when triples were rolled.
+		getfunc = function(player, item)
+			if G_BattleGametype() then return end
+			if not (JUICEBOX and JUICEBOX.value) then return end
+			if item ~= KITEM_SNEAKER then return end
+			local pks = player.kartstuff
+			-- Only for getting items through roulette, dropped/debug items are fine.
+			if pks[k_itemblink] ~= TICRATE and (xItemLib.toggles.debugItem and xItemLib.toggles.debugItem <= 0) then return end 
+			pks[k_itemamount] = min(2, $)
 		end
 	})
 
