@@ -33,7 +33,7 @@ local function xitemHandler()
 			if not (JUICEBOX and JUICEBOX.value) then return end
 			local player = playerMo.player
 			if not player then return end
-			
+
 			local f = P_SpawnMobj(arrowMo.x, arrowMo.y, arrowMo.z, MT_XITEMPLAYERARROW)
 			f.threshold = arrowMo.threshold
 			f.movecount = arrowMo.movecount
@@ -48,18 +48,24 @@ local function xitemHandler()
 			-- P_KillMobj(arrowMo) -- Let the hook handle this.
 			-- This results in two MT_XITEMPLAYERARROWs being created but fuck it we ball.
 			return true
-		end,
-		-- Fixes Juicebox balance not giving two sneakers when triples were rolled.
-		getfunc = function(player, item)
-			if G_BattleGametype() then return end
-			if not (JUICEBOX and JUICEBOX.value) then return end
-			if item ~= KITEM_SNEAKER then return end
-			local pks = player.kartstuff
-			-- Only for getting items through roulette, dropped/debug items are fine.
-			if pks[k_itemblink] ~= TICRATE or xItemLib.toggles.debugItem > 0 then return end 
-			pks[k_itemamount] = min(2, $)
 		end
 	})
+	
+	-- This NEEDS to have a function BECAUSE OTHERWISE HOOKS WON'T WORK
+	-- I SPENT FOUR HOURS AND THIRTY MINUTES TRYING TO FIGURE THIS OUT
+	local tripleSneakersFunc = lib.getItemDataById(KRITEM_TRIPLESNEAKER)["getfunc"]
+	if not tripleSneakersFunc then lib.getItemDataById(KRITEM_TRIPLESNEAKER)["getfunc"] = function(p, getitem) end end
+	
+	lib.getXItemModData(JB_NAMESPACE, KRITEM_TRIPLESNEAKER)["getfunc"] = function(player, item)
+		if G_BattleGametype() then return end
+		if not (JUICEBOX and JUICEBOX.value) then return end
+		if item ~= KRITEM_TRIPLESNEAKER then return end -- Just in case.
+		
+		-- Only for getting items through roulette, dropped/debug items are fine.
+		if xItemLib.toggles.debugItem > 0 then return end 
+		
+		player.kartstuff[k_itemamount] = min(2, $)
+	end
 
 	xitemHooked = true
 end
