@@ -56,7 +56,7 @@ local function xitemHandler()
 			if item ~= KITEM_SNEAKER then return end
 			local pks = player.kartstuff
 			-- Only for getting items through roulette, dropped/debug items are fine.
-			if pks[k_itemblink] ~= TICRATE and (xItemLib.toggles.debugItem and xItemLib.toggles.debugItem <= 0) then return end 
+			if pks[k_itemblink] ~= TICRATE or xItemLib.toggles.debugItem > 0 then return end 
 			pks[k_itemamount] = min(2, $)
 		end
 	})
