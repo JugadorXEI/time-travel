@@ -26,11 +26,47 @@ local V_SPLITSCREEN = V_SPLITSCREEN
 local V_SNAPTOTOP = V_SNAPTOTOP
 local V_SNAPTOBOTTOM = V_SNAPTOBOTTOM
 local V_FLIP = V_FLIP
+local V_HUDTRANS = V_HUDTRANS
 
 local TC_ALLWHITE = TC_ALLWHITE
+local TC_DEFAULT = TC_DEFAULT
 
 local V_90TRANS = V_90TRANS
 local V_10TRANS = V_10TRANS
+
+local KITEM_GROW = KITEM_GROW
+local KITEM_INVINCIBILITY = KITEM_INVINCIBILITY
+
+local ANGLE_270 = ANGLE_270
+local ANGLE_90 = ANGLE_90
+
+local k_invincibilitytimer = k_invincibilitytimer
+local k_growshrinktimer = k_growshrinktimer
+local k_itemtype = k_itemtype
+
+local table_insert = table.insert
+local R_PointToDist2 = R_PointToDist2
+local R_PointToAngle2 = R_PointToAngle2
+local FixedMul = FixedMul
+local abs = abs
+local tan = tan
+
+local areHUDfunctionsLocalized = false
+local hudAdd = hud.add
+local hudCachePatch = nil
+local hudDraw = nil
+local hudDrawScaled = nil
+local hudGetColormap = nil
+local hudFadeScreen = nil
+
+local function localizeHUDfunctions(v)
+	hudCachePatch = v.cachePatch
+	hudDraw = v.draw
+	hudDrawScaled = v.drawScaled
+	hudGetColormap = v.getColormap
+	hudFadeScreen = v.fadeScreen
+	areHUDfunctionsLocalized = true
+end
 
 local function getSplitscreenFlags(player)
 	local flags = 0
@@ -176,25 +212,25 @@ local cdsign_patches = {}
 local corner_patches = {}
 local cornervert_patches = {}
 
-local function cacheAllPatches(v)
+local function cacheAllPatches()
 	-- Kart's default CHECK sprites.
-	for i = 1, 6 do table.insert(check_patches, v.cachePatch("K_CHECK"..i)) end
+	for i = 1, 6 do table_insert(check_patches, hudCachePatch("K_CHECK"..i)) end
 	-- Kart's default item box sprites.
-	table.insert(itembox_patches, v.cachePatch("K_ITBG"))
-	table.insert(itembox_patches, v.cachePatch("K_ISBG"))
+	table_insert(itembox_patches, hudCachePatch("K_ITBG"))
+	table_insert(itembox_patches, hudCachePatch("K_ISBG"))
 	-- Time Travel gem patches
 	for i = ttd_spriteLowerBound, ttd_spriteUpperBound do
-		table.insert(tt_patches, 	v.cachePatch(timetravel.Sprite_TimeTravelDevice..i))
-		table.insert(tt_4p_patches, v.cachePatch(timetravel.Sprite_TimeTravelDeviceSmall..i))
+		table_insert(tt_patches, 	hudCachePatch(timetravel.Sprite_TimeTravelDevice..i))
+		table_insert(tt_4p_patches, hudCachePatch(timetravel.Sprite_TimeTravelDeviceSmall..i))
 	end
 	-- CD sign patches
 	for i = cd_spriteLowerBound, cd_spriteUpperBound do
-		table.insert(cdsign_patches, v.cachePatch(timetravel.Sprite_CDSign..i))
+		table_insert(cdsign_patches, hudCachePatch(timetravel.Sprite_CDSign..i))
 	end
 	-- TT corner patches
 	for i = border_spriteLowerBound, border_spriteUpperBound do
-		table.insert(corner_patches, 	 v.cachePatch(timetravel.Sprite_TimeTravelCorner..i))
-		table.insert(cornervert_patches, v.cachePatch(timetravel.Sprite_TimeTravelCorner..i.."V"))
+		table_insert(corner_patches, 	 hudCachePatch(timetravel.Sprite_TimeTravelCorner..i))
+		table_insert(cornervert_patches, hudCachePatch(timetravel.Sprite_TimeTravelCorner..i.."V"))
 	end
 end
 
@@ -240,19 +276,21 @@ local function K_FindCheckX(px, py, ang, mx, my)
 
 end
 
-local function K_DrawKartPlayerCheckEX(player, v)
-	if not player.mo and not player.mo.valid and player.specator then return end
+local function K_DrawKartPlayerCheckEX(player)
+	local playerMo = player.mo
+	if not playerMo and not playerMo.valid and player.specator then return end
 	if player.awayviewtics then return end
 	
 	for otherPlayer in players.iterate do
 		if otherPlayer == player then continue end
 		if otherPlayer.spectator then continue end
-		if not otherPlayer.mo or not otherPlayer.mo.valid then continue end
-		if not otherPlayer.mo.timetravel then continue end
+		local otherPlayerMo = otherPlayer.mo
+		if not otherPlayerMo or not otherPlayerMo.valid then continue end
+		if not otherPlayerMo.timetravel then continue end
 		-- Only do this for players that are *not* in your timeline.
-		if player.mo.timetravel.isTimeWarped == otherPlayer.mo.timetravel.isTimeWarped then continue end
+		if playerMo.timetravel.isTimeWarped == otherPlayerMo.timetravel.isTimeWarped then continue end
 		-- Get the other player's offset position.
-		local xOffset, yOffset = timetravel.determineTimeWarpPosition(otherPlayer.mo)
+		local xOffset, yOffset = timetravel.determineTimeWarpPosition(otherPlayerMo)
 		
 		local checkNum = 1
 		local pks = otherPlayer.kartstuff
@@ -267,13 +305,13 @@ local function K_DrawKartPlayerCheckEX(player, v)
 			checkNum = $ + 2
 		end
 		
-		local x = K_FindCheckX(player.mo.x, player.mo.y, player.mo.angle, otherPlayer.mo.x + xOffset, otherPlayer.mo.y + yOffset)
+		local x = K_FindCheckX(playerMo.x, playerMo.y, playerMo.angle, otherPlayerMo.x + xOffset, otherPlayerMo.y + yOffset)
 		if x <= 320 and x >= 0 then
 		
 			if x < 14 then x = 14
 			elseif x > 306 then x = 306 end
-			local colormap = v.getColormap(TC_DEFAULT, otherPlayer.mo.color)
-			v.draw(x, 200, check_patches[checkNum], V_HUDTRANS|V_SNAPTOBOTTOM, colormap)
+			local colormap = hudGetColormap(TC_DEFAULT, otherPlayerMo.color)
+			hudDraw(x, 200, check_patches[checkNum], V_HUDTRANS|V_SNAPTOBOTTOM, colormap)
 		end
 
 	end
@@ -282,9 +320,10 @@ end
 hud.add(function(v, player)
 	if timetravel.HUD_VERSION > HUD_VERSION then return end
 	if not timetravel.isActive then return end
+	if not areHUDfunctionsLocalized then localizeHUDfunctions(v) end
 	if leveltime < 3 then return end
 	
-	if not (#check_patches > 0) then cacheAllPatches(v) end
+	if not (#check_patches > 0) then cacheAllPatches() end
 	if leveltime == 3 then
 		ttd_animDuration = {ttd_animLength, ttd_animLength, ttd_animLength, ttd_animLength}
 		ttd_currentOffset = {
@@ -304,11 +343,11 @@ hud.add(function(v, player)
 			cd_spriteLowerBound
 		}
 	end
-
-	if player == nil or player.valid == false or 
-		player.mo == nil or player.mo.valid == false or 
-		player.mo.timetravel == nil or
-		player.timetravelconsts == nil then return end
+	
+	if not (player and player.valid and player.timetravelconsts) then return end
+	local playerMo = player.mo
+	
+	if not (playerMo and playerMo.valid and playerMo.timetravel) then return end
 
 	local xOffset, yOffset = getItemBoxPosition(player)
 	
@@ -318,13 +357,18 @@ hud.add(function(v, player)
 	end
 	
 	local playerLocalNum = timetravel.isDisplayPlayer(player) + 1
+	local playerTPCooldown = playerMo.timetravel.teleportCooldown
+	local playerWarped = playerMo.timetravel.isTimeWarped
+	local bonkCooldown = timetravel.echoBonkCooldown
+	local teleportCooldown = timetravel.teleportCooldown
 	
+	-- Item Box
 	if not timetravel.hasSomethingInItemBox(player) then
 		-- draw item box
 		local itemBoxPatch = itembox_patches[1]
 		if splitscreen > 1 then itemBoxPatch = itembox_patches[2] end
 		
-		v.draw(xOffset, yOffset, itemBoxPatch, flags|getSplitscreenFlags(player))
+		hudDraw(xOffset, yOffset, itemBoxPatch, flags|getSplitscreenFlags(player))
 		
 		if ttd_animDuration[playerLocalNum] < ttd_animLength then
 			ttd_animDuration[playerLocalNum] = $ + 1
@@ -335,10 +379,11 @@ hud.add(function(v, player)
 		end
 	end
 	
+	-- Time Travel Gem
 	local timeTravelDeviceFrameNum = ttd_spriteLowerBound
-	if player.mo.timetravel.teleportCooldown > 0 then
-		if player.mo.timetravel.teleportCooldown > timetravel.teleportCooldown - (ttd_spriteUpperBound * 2) then
-			timeTravelDeviceFrameNum = (timetravel.teleportCooldown / 2) - (player.mo.timetravel.teleportCooldown / 2) + 1
+	if playerTPCooldown > 0 then
+		if playerTPCooldown > teleportCooldown - (ttd_spriteUpperBound * 2) then
+			timeTravelDeviceFrameNum = (teleportCooldown / 2) - (playerTPCooldown / 2) + 1
 		else timeTravelDeviceFrameNum = ttd_spriteUpperBound
 		end
 	end
@@ -366,25 +411,25 @@ hud.add(function(v, player)
 	
 	-- print(((FRACUNIT/2) + ttd_currentOffset[playerLocalNum][3]) + " = " + FRACUNIT)
 	-- print("hud y: " + ttd_currentOffset[playerLocalNum][2]>>FRACBITS)
-	local playerColormap = v.getColormap(player.mo.skin, player.skincolor)
+	local playerColormap = hudGetColormap(playerMo.skin, player.skincolor)
 
-	v.drawScaled((xItemOffset << FRACBITS) + ttd_currentOffset[playerLocalNum][1],
+	hudDrawScaled((xItemOffset << FRACBITS) + ttd_currentOffset[playerLocalNum][1],
 		(yItemOffset << FRACBITS) + ttd_currentOffset[playerLocalNum][2],
 		(FRACUNIT/2) + ttd_currentOffset[playerLocalNum][3],
 		timeTravelDevicePatch, flags|getSplitscreenFlags(player), playerColormap)
 	
 	-- CD Sign
 	-- Perform animations based on whether the player just time traveled
-	if player.mo.timetravel.isTimeWarped ~= cd_previousPlaceStatus[playerLocalNum] then
+	if playerWarped ~= cd_previousPlaceStatus[playerLocalNum] then
 		cd_animDuration[playerLocalNum] = cd_animLength
 		
-		if player.mo.timetravel.isTimeWarped then
+		if playerWarped then
 			cd_animCurrentSignFrame[playerLocalNum] = 4
 		else
 			cd_animCurrentSignFrame[playerLocalNum] = 8
 		end
 	end
-	cd_previousPlaceStatus[playerLocalNum] = player.mo.timetravel.isTimeWarped
+	cd_previousPlaceStatus[playerLocalNum] = playerWarped
 	
 	if cd_animDuration[playerLocalNum] > 0 then
 		local cd_pos = cd_getPlayerOffset(player)
@@ -393,11 +438,11 @@ hud.add(function(v, player)
 
 			local colormap = nil
 			if cd_animDuration[playerLocalNum] == cd_animDimensionView - 1 then
-				colormap = v.getColormap(TC_ALLWHITE)
+				colormap = hudGetColormap(TC_ALLWHITE)
 			end
 
 			local currentAnimPatch = cdsign_patches[cd_animCurrentSignFrame[playerLocalNum]]
-			v.draw(cd_pos[1], cd_pos[2], currentAnimPatch, getSplitscreenFlags(player), colormap)
+			hudDraw(cd_pos[1], cd_pos[2], currentAnimPatch, getSplitscreenFlags(player), colormap)
 			
 			if cd_animDuration[playerLocalNum] % 2 == 0 then
 				cd_animCurrentSignFrame[playerLocalNum] = $ + 1
@@ -409,14 +454,13 @@ hud.add(function(v, player)
 			
 		else
 			local currentLocationPatch = nil
-			if player.mo.timetravel.isTimeWarped == false then currentLocationPatch = cdsign_patches[cd_past]
+			if playerWarped == false then currentLocationPatch = cdsign_patches[cd_past]
 			else currentLocationPatch = cdsign_patches[cd_future] end
-		
-			if cd_animDuration[playerLocalNum] >= 9 then -- Showing off where we are
-				v.draw(cd_pos[1], cd_pos[2], currentLocationPatch, getSplitscreenFlags(player))
-			elseif cd_animDuration[playerLocalNum] < 9 then
-				v.draw(cd_pos[1], cd_pos[2], currentLocationPatch, getSplitscreenFlags(player)|(V_10TRANS * (9 - cd_animDuration[playerLocalNum])))
-			end
+			
+			local flags = getSplitscreenFlags(player)
+			if cd_animDuration[playerLocalNum] < 9 then flags = $|(V_10TRANS * (9 - cd_animDuration[playerLocalNum])) end
+			
+			hudDraw(cd_pos[1], cd_pos[2], currentLocationPatch, flags)
 		end
 		
 		cd_animDuration[playerLocalNum] = $ - 1
@@ -424,37 +468,35 @@ hud.add(function(v, player)
 	
 	-- Kart Check
 	if (cv_kartcheck and cv_kartcheck.value) and not splitscreen and not player.exiting then
-		K_DrawKartPlayerCheckEX(player, v)
+		K_DrawKartPlayerCheckEX(player)
 	end
 	
 	-- Borders
-	if not splitscreen and player.mo.timetravel.teleportCooldown ~= nil and
-		player.mo.timetravel.teleportCooldown > timetravel.echoBonkCooldown then -- testing borders
+	if not splitscreen and playerTPCooldown ~= nil and
+		playerTPCooldown > bonkCooldown then -- testing borders
 		-- print(timetravel.Sprite_TimeTravelCorner+((leveltime % 6) + 1))
 		local flags = 0
 		
-		if player.mo.timetravel.teleportCooldown < timetravel.echoBonkCooldown + 9 then
-			flags = V_90TRANS - (V_10TRANS * (player.mo.timetravel.teleportCooldown - timetravel.echoBonkCooldown))
+		if playerTPCooldown < bonkCooldown + 9 then
+			flags = V_90TRANS - (V_10TRANS * (playerTPCooldown - bonkCooldown))
 		end
 		
 		local frameNum = ((leveltime % 12) / 2) + 1
 		local upperRightCorner = corner_patches[frameNum]
 		local lowerRightCorner = cornervert_patches[frameNum]
 
-		v.drawScaled(BASEVIDWIDTH<<FRACBITS, 0, FRACUNIT/3, upperRightCorner, flags|V_SNAPTOTOP|V_SNAPTORIGHT)
-		v.drawScaled(BASEVIDWIDTH<<FRACBITS, BASEVIDHEIGHT<<FRACBITS, FRACUNIT/3, lowerRightCorner, flags|V_SNAPTOBOTTOM|V_SNAPTORIGHT)
-		v.drawScaled(0, 0, FRACUNIT/3, upperRightCorner, flags|V_SNAPTOTOP|V_SNAPTOLEFT|V_FLIP)
-		v.drawScaled(0, BASEVIDHEIGHT<<FRACBITS, FRACUNIT/3, lowerRightCorner, flags|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_FLIP)
+		hudDrawScaled(BASEVIDWIDTH<<FRACBITS, 0, FRACUNIT/3, upperRightCorner, flags|V_SNAPTOTOP|V_SNAPTORIGHT)
+		hudDrawScaled(BASEVIDWIDTH<<FRACBITS, BASEVIDHEIGHT<<FRACBITS, FRACUNIT/3, lowerRightCorner, flags|V_SNAPTOBOTTOM|V_SNAPTORIGHT)
+		hudDrawScaled(0, 0, FRACUNIT/3, upperRightCorner, flags|V_SNAPTOTOP|V_SNAPTOLEFT|V_FLIP)
+		hudDrawScaled(0, BASEVIDHEIGHT<<FRACBITS, FRACUNIT/3, lowerRightCorner, flags|V_SNAPTOBOTTOM|V_SNAPTOLEFT|V_FLIP)
 	end
 	
 	-- Flash
 	if player.timetravelconsts.TWFlash > 0 then
 		local paletteColor = 120
-		if player.mo.timetravel.isTimeWarped then
-			paletteColor = 30
-		end
+		if playerWarped then paletteColor = 30 end
 	
-		v.fadeScreen(paletteColor, player.timetravelconsts.TWFlash * 2)
+		hudFadeScreen(paletteColor, player.timetravelconsts.TWFlash * 2)
 	end
 end)
 
