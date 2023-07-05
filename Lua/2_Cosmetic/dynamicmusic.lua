@@ -4,9 +4,11 @@ local DYNMUS_VERSION = 1
 if timetravel.DYNMUS_VERSION == nil or timetravel.DYNMUS_VERSION < DYNMUS_VERSION then
 
 local TICRATE = TICRATE
+local starttime = 6*TICRATE + 3*TICRATE/4
+local S_MusicName = S_MusicName
+local S_GetMusicPosition = S_GetMusicPosition
 
 local inOtherZone = nil
-local starttime = 6*TICRATE + 3*TICRATE/4
 
 local pastMusic = nil
 local futureMusic = nil
@@ -15,18 +17,21 @@ addHook("ThinkFrame", function()
 	if timetravel.DYNMUS_VERSION > DYNMUS_VERSION then return end
 	if not timetravel.isActive then return end
 	-- Only care about the first display player here.
+	local mapheaders = mapheaderinfo[gamemap]
 	
-	if leveltime == 3 and mapheaderinfo[gamemap] ~= nil then
-		pastMusic = mapheaderinfo[gamemap].musname
-		futureMusic = mapheaderinfo[gamemap].musname_future
+	if leveltime == 3 and mapheaders ~= nil then
+		pastMusic = mapheaders.musname
+		futureMusic = mapheaders.musname_future
 		inOtherZone = nil
 	end
 	
 	if leveltime < (starttime + (TICRATE/2)) then return end
 	if pastMusic == nil or futureMusic == nil then return end
-	local player = displayplayers[0]
 	if consoleplayer ~= nil and consoleplayer.exiting > 0 then return end
-	local musname = S_MusicName() 
+	
+	local player = displayplayers[0]
+	local musname = S_MusicName()
+	
 	if musname ~= pastMusic and musname ~= futureMusic or -- Don't override invincibility music, grow music or other mods' music
 		not (player and player.mo and player.mo.timetravel and player.mo.timetravel.isTimeWarped ~= nil) then
 		inOtherZone = nil

@@ -6,21 +6,35 @@ if timetravel.TPANIM_VERSION == nil or timetravel.TPANIM_VERSION < TPANIM_VERSIO
 local FRACBITS = FRACBITS
 local FRACUNIT = FRACUNIT
 
+local A = A
 local FF_TRANSMASK = FF_TRANSMASK
 local FF_TRANS90 = FF_TRANS90
 local FF_TRANS10 = FF_TRANS10
 local FF_FULLBRIGHT = FF_FULLBRIGHT
+local FF_FRAMEMASK = FF_FRAMEMASK
 
 local MF_NOBLOCKMAP = MF_NOBLOCKMAP
 local MF_NOCLIP = MF_NOCLIP
 local MF_NOGRAVITY = MF_NOGRAVITY
 local MF_NOCLIPHEIGHT = MF_NOCLIPHEIGHT
 local MF_DONTENCOREMAP = MF_DONTENCOREMAP
+local MF_SCENERY = MF_SCENERY
 
 local ANGLE_90 = ANGLE_90
 local ANGLE_180 = ANGLE_180
 
-freeslot("MT_TT_SPARKLEOVERLAY", "SPR_TTSP", "S_TT_SPARKLE")
+local SKINCOLOR_BLUE = SKINCOLOR_BLUE
+
+local S_INVISIBLE = S_INVISIBLE
+
+local FixedMul = FixedMul
+local FixedDiv = FixedDiv
+local P_KillMobj = P_KillMobj
+local P_MoveOrigin = P_MoveOrigin
+local P_ReturnThrustX = P_ReturnThrustX
+local P_ReturnThrustY = P_ReturnThrustY
+
+freeslot("SPR_TTSP", "S_TT_SPARKLE", "MT_TT_SPARKLEOVERLAY")
 
 local animOrder = { A, B, C, B }
 local sparklePos = {
@@ -47,21 +61,24 @@ local function easeOut(a)
 end
 
 function A_SparkleOnItsTuesdayDontForgetToBeYourself(actor, var1)
-	actor.momx = FixedMul(actor.momx, FRACUNIT - easeOut(FRACUNIT / actor.fuse))
-	actor.momy = FixedMul(actor.momy, FRACUNIT - easeOut(FRACUNIT / actor.fuse))
+	local actorFuse = actor.fuse
+	local actorFrame = actor.frame
+
+	actor.momx = FixedMul(actor.momx, FRACUNIT - easeOut(FRACUNIT / actorFuse))
+	actor.momy = FixedMul(actor.momy, FRACUNIT - easeOut(FRACUNIT / actorFuse))
 	
-	actor.frame = ($ & ~FF_FRAMEMASK) | animOrder[((actor.fuse % 8) / 2) + 1]
+	actor.frame = ($ & ~FF_FRAMEMASK) | animOrder[((actorFuse % 8) / 2) + 1]
 	
-	if (actor.frame & FF_TRANSMASK) then actor.extravalue1 = (actor.frame & FF_TRANSMASK) / FF_TRANS10 end
-	if actor.fuse < (FF_TRANS90/FF_TRANS10) - actor.extravalue1 then
-		if (actor.frame & FF_TRANSMASK) 	then actor.frame = $ & ~FF_TRANSMASK end
-		if (actor.frame & FF_FULLBRIGHT) 	then actor.frame = $ & ~FF_FULLBRIGHT end
-		actor.frame = $ | (FF_TRANS90 - (FF_TRANS10 * actor.fuse))
+	if (actorFrame & FF_TRANSMASK) then actor.extravalue1 = (actorFrame & FF_TRANSMASK) / FF_TRANS10 end
+	if actorFuse < (FF_TRANS90/FF_TRANS10) - actor.extravalue1 then
+		if (actorFrame & FF_TRANSMASK) 	then actorFrame = $ & ~FF_TRANSMASK end
+		if (actorFrame & FF_FULLBRIGHT) 	then actorFrame = $ & ~FF_FULLBRIGHT end
+		actor.frame = $ | (FF_TRANS90 - (FF_TRANS10 * actorFuse))
 	end
 	
 	-- print(actor.frame)
 	
-	if actor.fuse <= 0 then P_KillMobj(actor) end
+	if actorFuse <= 0 then P_KillMobj(actor) end
 end
 
 mobjinfo[MT_TT_SPARKLEOVERLAY] = {
@@ -91,17 +108,22 @@ addHook("MobjThinker", function(mo)
 	P_MoveOrigin(mo, target.x, target.y, target.z)
 	
 	if mo.tics % 4 == 0 then
-		local xOffset = P_ReturnThrustX(target.angle + ANGLE_180, FRACUNIT)
-		local yOffset = P_ReturnThrustY(target.angle + ANGLE_180, FRACUNIT)
+		local targetAngle = target.angle
+		local targetScale = target.scale
+		local targetRadius = target.radius
+		local mapobjectscale = mapobjectscale
+		local xOffset = P_ReturnThrustX(targetAngle + ANGLE_180, FRACUNIT)
+		local yOffset = P_ReturnThrustY(targetAngle + ANGLE_180, FRACUNIT)
 		local zOffset = FixedDiv(target.height, mapobjectscale*2)
+		local extravalue1 = mo.extravalue1
 		
-		xOffset = $ + P_ReturnThrustX(target.angle + ANGLE_90, sparklePos[(mo.extravalue1 % #sparklePos) + 1][1])
-		yOffset = $ + P_ReturnThrustY(target.angle + ANGLE_90, sparklePos[(mo.extravalue1 % #sparklePos) + 1][1])
-		zOffset = $ + sparklePos[(mo.extravalue1 % #sparklePos) + 1][2]
+		xOffset = $ + P_ReturnThrustX(targetAngle + ANGLE_90, sparklePos[(extravalue1 % #sparklePos) + 1][1])
+		yOffset = $ + P_ReturnThrustY(targetAngle + ANGLE_90, sparklePos[(extravalue1 % #sparklePos) + 1][1])
+		zOffset = $ + sparklePos[(extravalue1 % #sparklePos) + 1][2]
 		
-		xOffset = FixedMul(FixedMul($, target.scale), FRACUNIT)
-		yOffset = FixedMul(FixedMul($, target.scale), FRACUNIT)
-		zOffset = FixedMul(FixedMul($, target.scale), FRACUNIT)
+		xOffset = FixedMul(FixedMul($, targetScale), FRACUNIT)
+		yOffset = FixedMul(FixedMul($, targetScale), FRACUNIT)
+		zOffset = FixedMul(FixedMul($, targetScale), FRACUNIT)
 		
 		local sparkle = P_SpawnMobj(mo.x + xOffset, mo.y + yOffset, mo.z + zOffset, MT_THOK)
 		sparkle.target = target
@@ -112,8 +134,8 @@ addHook("MobjThinker", function(mo)
 		end
 		
 		if target.player.speed < 5<<FRACBITS then
-			momx = $ + P_ReturnThrustX(target.angle + ANGLE_180, target.radius/2)
-			momy = $ + P_ReturnThrustY(target.angle + ANGLE_180, target.radius/2)
+			momx = $ + P_ReturnThrustX(targetAngle + ANGLE_180, targetRadius/2)
+			momy = $ + P_ReturnThrustY(targetAngle + ANGLE_180, targetRadius/2)
 		end
 		
 		sparkle.momx = momx
