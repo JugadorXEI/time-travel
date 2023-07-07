@@ -348,8 +348,11 @@ addHook("MobjDeath", function(mobj, inflictor, source)
 	end
 end)
 
-addHook("TouchSpecial", function(special, toucher) timetravel.eggmanSoundHandler(special, toucher) end, MT_EGGMANITEM)
-addHook("TouchSpecial", function(special, toucher) timetravel.eggmanSoundHandler(special, toucher) end, MT_EGGMANITEM_SHIELD)
+addHook("TouchSpecial", function(special, toucher)
+	if special.type == MT_EGGMANITEM or special.type == MT_EGGMANITEM_SHIELD then
+		timetravel.eggmanSoundHandler(special, toucher)
+	end
+end)
 
 -- Process this after the eggman handling:
 addHook("MobjRemoved", function(mobj)
