@@ -10,6 +10,7 @@ timetravel.numstarposts = 0
 local TICRATE = TICRATE
 local FRACBITS = FRACBITS
 local FRACUNIT = FRACUNIT
+local INT32_MAX = INT32_MAX
 local MTF_OBJECTSPECIAL = MTF_OBJECTSPECIAL
 local MT_BOSS3WAYPOINT = MT_BOSS3WAYPOINT
 local DOOMEDNUM_BOSS3WAYPOINT = 292
@@ -25,6 +26,7 @@ local starttime = 6*TICRATE + 3*TICRATE/4
 
 local ipairs = ipairs
 local table_insert = table.insert
+local table_sort = table.sort
 local FixedHypot = FixedHypot
 local K_PlayOvertakeSound = K_PlayOvertakeSound
 
@@ -41,6 +43,7 @@ end
 
 local K_OldKartUpdatePosition = K_KartUpdatePosition
 
+-- OLD version of waypoints.
 local function K_KartUpdatePositionEX(thisPlayer)
 	if not timetravel.isActive then return K_OldKartUpdatePosition(thisPlayer) end
 	
@@ -181,6 +184,91 @@ end
 
 _G["K_KartUpdatePosition"] = K_KartUpdatePositionEX
 
+
+--[[
+	Waypoints v2
+	Instead of comparing player positions per-player, we instead do this once.
+	We first process the players' waypoint positions (next and prev).
+	We then gather all necesary data first from each player (lap, startpost num, next pos. to waypoint)
+	We then sort this data by lap, startpost and position.
+	Finally we assign the final player positions.
+]]
+local function timeTravelWaypointsProcessing()
+	local positionTable = {}
+	
+	for player in players.iterate do
+		if player.spectator then continue end
+		
+		local lap = player.laps
+		local startpostnum = player.starpostnum
+		local nextpos = INT32_MAX
+		
+		local pMo = player.mo
+		local pMoX, pMoY, pMoZ = pMo.x, pMo.y, pMo.z
+		local pks = player.kartstuff
+		local prevWaypointNum, nextWaypointNum = 0, 0
+		
+		pks[k_prevcheck] = 0
+		pks[k_nextcheck] = 0
+		
+		local thisPlayerWaypoints = getWaypointTableToUse(player)
+		for _, mo in ipairs(thisPlayerWaypoints[startpostnum]) do
+			
+			local dist = FixedHypot(FixedHypot(mo.x - pMoX,
+								mo.y - pMoY),
+								mo.z - pMoZ) >> FRACBITS
+
+			pks[k_prevcheck] = $ + dist
+			prevWaypointNum = $ + 1
+		end
+		
+		for _, mo in ipairs(thisPlayerWaypoints[startpostnum + 1]) do
+			
+			local dist = FixedHypot(FixedHypot(mo.x - pMoX,
+								mo.y - pMoY),
+								mo.z - pMoZ) >> FRACBITS
+			
+
+			pks[k_nextcheck] = $ + dist
+			nextWaypointNum = $ + 1
+		end
+		
+		if prevWaypointNum > 1 then pks[k_prevcheck] = $ / prevWaypointNum end
+		if nextWaypointNum > 1 then pks[k_nextcheck] = $ / nextWaypointNum end
+		
+		nextpos = pks[k_prevcheck]
+		
+		table_insert(positionTable, {player, lap, startpostnum, nextpos})
+	end
+	
+	table_sort(positionTable, function(a, b)
+		return a[2] < b[2] or a[3] < b[3] or a[4] < b[4]
+	end)
+	
+	for i = 1, #positionTable do
+		local player = positionTable[i][1]
+		local pks = player.kartstuff
+		
+		local oldPosition = player.timetravelconsts.kartPosition
+		local position = i
+		
+		if leveltime < starttime or oldPosition == 0 then
+			oldPosition = position
+		end
+		
+		if oldPosition ~= position then
+			player.timetravelconsts.kartPositionDelay = 10 -- Position number growth
+		end
+		
+		player.timetravelconsts.kartPosition = position
+		pks[k_position] = position
+		
+		-- print("#" + i + ": " + player.name)
+	end
+	
+	-- print("----------")
+end
+
 addHook("PlayerThink", function(player)
 	if timetravel.WAYPOINTS_VERSION > WAYPOINTS_VERSION then return end
 	if not timetravel.isActive then return end
@@ -189,8 +277,10 @@ addHook("PlayerThink", function(player)
 	if player.spectator or (pMo == nil or pMo.valid == false) or 
 		not player.timetravelconsts then return end
 	
-	K_KartUpdatePositionEX(player)
+	timeTravelWaypointsProcessing()
+	
 	local pks = player.kartstuff
+	player.timetravelconsts.kartPosition = $ or 0
 	
 	if not player.exiting then
 	
