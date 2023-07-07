@@ -3,6 +3,34 @@ local ECHOES_TABLES_VERSION = 1
 -- avoid redefiniton on updates
 if timetravel.ECHOES_TABLES_VERSION == nil or timetravel.ECHOES_TABLES_VERSION < ECHOES_TABLES_VERSION then
 
+local FRACBITS = FRACBITS
+local TICRATE = TICRATE
+
+local sfx_s3k3a = sfx_s3k3a
+local sfx_s3k41 = sfx_s3k41
+local sfx_s254 = sfx_s254
+local sfx_cdpcm9 = sfx_cdpcm9
+local sfx_cdfm01 = sfx_cdfm01
+local sfx_cdfm17 = sfx_cdfm17
+
+local S_SSMINE_AIR1 = S_SSMINE_AIR1
+local S_SSMINE_AIR2 = S_SSMINE_AIR2
+local S_SSMINE_DEPLOY8 = S_SSMINE_DEPLOY8
+local S_SSMINE_DEPLOY13 = S_SSMINE_DEPLOY13
+local S_SSMINE1 = S_SSMINE1
+local S_SSMINE4 = S_SSMINE4
+
+local abs = abs
+local FixedMul = FixedMul
+local FixedHypot = FixedHypot
+local P_RemoveMobj = P_RemoveMobj
+local S_StartSound = S_StartSound
+local S_SoundPlaying = S_SoundPlaying
+local P_IsObjectOnGround = P_IsObjectOnGround
+local R_PointToAngle2 = R_PointToAngle2
+local P_SpawnMobj = P_SpawnMobj
+local searchBlockmap = searchBlockmap
+
 timetravel.typesToEcho = {
 	-- Vanilla:
 	"MT_PLAYER",
@@ -124,9 +152,11 @@ MT_DRIFTDUST ??? why do you give a reference in MT_BRAKEDRIFT and not this one??
 ]]
 
 local function bananaSounds_Spawn(mobj)
-	local soundToReturn = mobj.linkedItem.info.activesound
-	if mobj.linkedItem.momx > 0 or mobj.linkedItem.momy > 0 or mobj.linkedItem.momz > 0 then
-		soundToReturn = mobj.linkedItem.info.seesound
+	local linkedItem = mobj.linkedItem
+	
+	local soundToReturn = linkedItem.info.activesound
+	if linkedItem.momx > 0 or linkedItem.momy > 0 or linkedItem.momz > 0 then
+		soundToReturn = linkedItem.info.seesound
 	end
 	
 	return soundToReturn
@@ -152,8 +182,9 @@ local function jawzSoundz(mobj)
 end
 
 local function bananaSounds(mobj)
-	if P_IsObjectOnGround(mobj.linkedItem) and mobj.linkedItem.health > 1 then
-		S_StartSound(mobj, mobj.linkedItem.info.activesound)
+	local linkedItem = mobj.linkedItem
+	if P_IsObjectOnGround(linkedItem) and linkedItem.health > 1 then
+		S_StartSound(mobj, linkedItem.info.activesound)
 	end
 end
 
@@ -165,38 +196,16 @@ end
 
 timetravel.echoIdleSounds = {
 	[MT_PLAYER] = function(mobj)
-		if not mobj and not mobj.valid and not mobj.timetravel then return end
-		local linkedItem = mobj.linkedItem
-		local player = linkedItem.player
+		if not (mobj and mobj.valid and mobj.timetravel) then return end
+		local player = mobj.linkedItem.player
 		if not player then return end
 		
+		-- Engine sounds
 		timetravel.K_UpdateEngineSoundsEX(player, player.cmd)
 		
-		-- Regular dorifto noise.
-		local anglediff = 0
-		if (player.pflags & PF_SKIDDOWN) then
-			anglediff = abs(linkedItem.angle - player.frameangle)
-			if leveltime % 6 == 0 then S_StartSound(mobj, sfx_screec) end
-		elseif player.speed >= 5<<FRACBITS then
-			local playerangle = linkedItem.angle 
+		-- Drift and skid noises
+		timetravel.P_SkidAndDriftNoises(player, mobj)
 			
-			if player.cmd.forwardmove < 0 then playerangle = $ + ANGLE_180 end
-			anglediff = abs(playerangle - R_PointToAngle2(0, 0, player.rmomx, player.rmomy))
-		end
-		
-		if anglediff > ANG10 * 4 then
-			if leveltime % 6 == 0 then S_StartSound(mobj, sfx_screec) end
-		end
-		
-		-- print((anglediff/ANG1) + " ... " + (anglediff > ANG10*4))
-
-		-- Drift release noise.
-		local dsr = K_GetKartDriftSparkValue(player)
-		if player.kartstuff[k_drift] ~= -5 and player.kartstuff[k_drift] ~= 5 and
-			player.kartstuff[k_driftcharge] >= dsr and P_IsObjectOnGround(mobj.linkedItem) then
-			S_StartSound(mobj, sfx_s23c)
-		end
-		
 		-- Invincibility & Grow
 		timetravel.K_UpdateInvincibilitySoundsEX(player, mobj)
 		
@@ -216,18 +225,21 @@ timetravel.echoIdleSounds = {
 		end
 	end,
 	[MT_SSMINE_SHIELD] = function(mobj)
-		if P_IsObjectOnGround(mobj.linkedItem) and mobj.linkedItem.extravalue1 <= 0 and
-			(mobj.linkedItem.state == S_SSMINE_AIR1 or mobj.linkedItem.state == S_SSMINE_AIR2) then
-				S_StartSound(mobj, mobj.linkedItem.info.activesound)
+		local linkedItem = mobj.linkedItem
+		local linkedItemState = linkedItem.state
+		
+		if P_IsObjectOnGround(linkedItem) and linkedItem.extravalue1 <= 0 and
+			(linkedItemState == S_SSMINE_AIR1 or linkedItemState == S_SSMINE_AIR2) then
+				S_StartSound(mobj, linkedItem.info.activesound)
 		end
 		
-		local explodedist = FixedMul(mobj.linkedItem.info.painchance, mapobjectscale)
-		if mobj.linkedItem.state == S_SSMINE_DEPLOY8 then
+		local explodedist = FixedMul(linkedItem.info.painchance, mapobjectscale)
+		if linkedItemState == S_SSMINE_DEPLOY8 then
 			explodedist = (3*$)/2 
 		end
 		
-		if (mobj.linkedItem.state >= S_SSMINE1 and mobj.linkedItem.state <= S_SSMINE4) or
-			(mobj.linkedItem.state >= S_SSMINE_DEPLOY8 and mobj.linkedItem.state <= S_SSMINE_DEPLOY13) then
+		if (linkedItemState >= S_SSMINE1 and linkedItemState <= S_SSMINE4) or
+			(linkedItemState >= S_SSMINE_DEPLOY8 and linkedItemState <= S_SSMINE_DEPLOY13) then
 			beep(mobj)
 			searchBlockmap("objects", function(refmobj, foundmobj)
 				if FixedHypot(FixedHypot(refmobj.x - foundmobj.x, refmobj.y - foundmobj.y),
@@ -247,18 +259,23 @@ timetravel.echoIdleSounds = {
 		if not S_SoundPlaying(mobj, sfx_cdfm17) then S_StartSound(mobj, sfx_cdfm17) end
 	end,
 	[MT_SIGN] = function(mobj)
-		if mobj.linkedItem.z <= mobj.linkedItem.movefactor then
-			if mobj.linkedItem.info.attacksound then S_StartSound(mobj, mobj.linkedItem.info.attacksound) end
+		local linkedItem = mobj.linkedItem
+		local attackSound = linkedItem.info.attacksound
+		local seeSound = linkedItem.info.seesound
+		
+		if linkedItem.z <= linkedItem.movefactor then
+			if attackSound then S_StartSound(mobj, attackSound) end
 		else
-			if abs(mobj.linkedItem.z - mobj.linkedItem.movefactor) <= (512 * mobj.linkedItem.scale) and not mobj.linkedItem.cvmem then
-				if mobj.linkedItem.info.seesound then S_StartSound(mobj, mobj.linkedItem.info.seesound) end
-				mobj.linkedItem.cvmem = 1
+			if abs(linkedItem.z - linkedItem.movefactor) <= (512 * linkedItem.scale) and not linkedItem.cvmem then
+				if seeSound then S_StartSound(mobj, seeSound) end
+				linkedItem.cvmem = 1
 			end
 		end
 	end,
 	[MT_FZEROBOOM] = function(mobj)
-		if not S_SoundPlaying(mobj, mobj.linkedItem.info.attacksound) then
-			S_StartSound(mobj, mobj.linkedItem.info.attacksound)
+		local attacksound = mobj.linkedItem.info.attacksound
+		if not S_SoundPlaying(mobj, attacksound) then
+			S_StartSound(mobj, attacksound)
 		end
 	end,
 }

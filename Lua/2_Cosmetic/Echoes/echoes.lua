@@ -19,7 +19,35 @@ local FF_TRANS10 = FF_TRANS10
 local FF_TRANS50 = FF_TRANS50
 local FF_TRANSMASK = FF_TRANSMASK
 
+local pw_flashing = pw_flashing
+local k_squishedtimer = k_squishedtimer
+local k_spinouttimer = k_spinouttimer
+local k_invincibilitytimer = k_invincibilitytimer
+local k_growshrinktimer = k_growshrinktimer
+local k_hyudorotimer = k_hyudorotimer
+local k_bumper = k_bumper
+local k_comebacktimer = k_comebacktimer
+local k_comebackmode = k_comebackmode
+local k_roulettetype = k_roulettetype
+local k_itemroulette = k_itemroulette
+
+local sfx_ttshit = sfx_ttshit
+local sfx_s3k49 = sfx_s3k49
+
 local GT_MATCH = GT_MATCH
+
+local S_INVISIBLE = S_INVISIBLE
+
+local table_insert = table.insert
+local ipairs = ipairs
+local K_SpawnMineExplosion = K_SpawnMineExplosion
+local P_SpawnShadowMobj = P_SpawnShadowMobj
+local P_RemoveMobj = P_RemoveMobj
+local P_SpawnMobj = P_SpawnMobj
+local S_StartSound = S_StartSound
+local P_CheckPosition = P_CheckPosition
+local P_SetOrigin = P_SetOrigin
+local P_MoveOrigin = P_MoveOrigin
 
 freeslot("MT_ECHOGHOST")
 mobjinfo[MT_ECHOGHOST] = {
@@ -30,60 +58,7 @@ timetravel.echoBonkCooldown = (TICRATE/2) - 2
 timetravel.echoItemCollideCooldown = TICRATE/4
 timetravel.validTypesToEcho = {}
 
-addHook("MobjThinker", function(mo)
-	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
-	if mo.linkedItem == nil or mo.linkedItem.valid == false then return end
-	
-	local xOffset, yOffset = timetravel.determineTimeWarpPosition(mo.linkedItem)
-	
-	local movement = P_MoveOrigin
-	if mo.justEchoTeleported then movement = P_SetOrigin end
-	movement(mo, mo.linkedItem.x + xOffset, mo.linkedItem.y + yOffset, mo.linkedItem.z)
-	
-	if mo.justEchoTeleported and mo.linkedItem.player then
-		-- We play a sound later on, and we cannot play another new sound with the same origin apparently.
-		-- So we create a new one, temporarily. Only for the player tho otherwise it's confusing.
-		local soundHack = P_SpawnMobj(mo.x, mo.y, mo.z, MT_OVERLAY)
-		soundHack.target = mo
-		soundHack.state = S_INVISIBLE
-		soundHack.fuse = 2
-		S_StartSound(soundHack, sfx_ttshit)
-	end
-	
-	mo.justEchoTeleported = false
-	
-	if mo.linkedItem.type == MT_PLAYER then
-		mo.skin = mo.linkedItem.skin
-	end
-	
-	mo.color = mo.linkedItem.color
-	mo.sprite = mo.linkedItem.sprite
-	mo.scale = mo.linkedItem.scale
-	mo.destscale = mo.linkedItem.destscale
-	mo.height = mo.linkedItem.height
-	mo.radius = mo.linkedItem.radius
-	
-	if mo.linkedItem.type == MT_PLAYER then
-		mo.angle = mo.linkedItem.player.frameangle
-	else mo.angle = mo.linkedItem.angle
-	end
-	
-	mo.flags2 = mo.linkedItem.flags2
-	mo.colorized = true
-	
-	local transFlag = 0	
-	if (mo.linkedItem.flags & MF_SHOOTABLE) then
-		transFlag = FF_TRANS50 - abs(FF_TRANS10 * (((TICRATE/2) - (leveltime % TICRATE)) / 4))
-	elseif (mo.linkedItem.frame & FF_TRANSMASK) == 0 then
-		transFlag = FF_TRANS50
-	end	
-	if transFlag ~= 0 then mo.frame = $ & (~FF_TRANSMASK) end
-	
-	mo.frame = mo.linkedItem.frame | transFlag
-	
-	timetravel.playEchoIdleBehaviour(mo)
-end, MT_ECHOGHOST)
-
+-- Helpers
 local function isPlayerDamaged(player, withItemStates, alsoFlashTics)
 	if alsoFlashTics == nil then alsoFlashTics = true end
 	
@@ -103,80 +78,45 @@ local function justGotHit(player)
 
 end
 
-addHook("MobjCollide", function(thing, tmthing)
-	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
+-- This is not in echoesfunctions.lua for the sake of organization.
+-- This ideally should never move from this file.
+timetravel.echoes_SpawnHandler = function(mobj)
+	if not mobj.echoable then return end
+	if mobj.linkedItem ~= nil then return end
 	
-	-- Height checks.
-	if tmthing.momz < 0 then
-		if tmthing.z + tmthing.momz > thing.z + thing.height then
-			return false
-		end
-	elseif tmthing.z > thing.z + thing.height then
-		return false
+	if timetravel.performSpecialSpawnCode(mobj) then return end
+	
+	local targetPlayer = mobj.target
+	local tracerPlayer = mobj.tracer
+	if targetPlayer ~= nil then targetPlayer = $.player end
+	if tracerPlayer ~= nil then tracerPlayer = $.player end
+
+	local player = (mobj.player or targetPlayer) or tracerPlayer
+	if player == nil or player.mo.timetravel == nil then return end
+	
+	local xOffset, yOffset = timetravel.determineTimeWarpPosition(player.mo)
+	
+	local echoItem = timetravel.SpawnEchoMobj(mobj)
+	P_SetOrigin(echoItem, mobj.x + xOffset, mobj.y + yOffset, mobj.z)
+	
+	if mobj.timetravel == nil and mobj.type ~= MT_PLAYER then mobj.timetravel = {} end
+	echoItem.timetravel = {}
+	
+	mobj.timetravel.isTimeWarped 		= player.mo.timetravel.isTimeWarped
+	echoItem.timetravel.isTimeWarped 	= not player.mo.timetravel.isTimeWarped
+	
+	mobj.timetravel.touchEchoCD = 0
+	
+	echoItem.linkedItem 	= mobj
+	mobj.linkedItem 		= echoItem
+	
+	timetravel.playEchoSpawnSound(echoItem)
+	if mobj.flags & MF_SHOOTABLE and mobj.type ~= MT_EGGMANITEM and mobj.type ~= MT_EGGMANITEM_SHIELD then
+		P_SpawnShadowMobj(echoItem)
 	end
-	
-	if tmthing.momz > 0 then
-		if tmthing.z + tmthing.height + tmthing.momz < thing.z then
-			return false
-		end
-	elseif tmthing.z + tmthing.height < thing.z then
-		return false
-	end
-	
-	if thing.linkedItem == nil or thing.linkedItem.valid == false then return false end
-	if tmthing.linkedItem == nil or tmthing.linkedItem.valid == false then return false end
-	if thing == tmthing.linkedItem or thing.linkedItem == tmthing then return false end -- don't let things touch themselves...
-	-- only relevant to shootables and things we wanna hit.
-	if not (thing.linkedItem.flags & MF_SHOOTABLE or timetravel.additionalHittables[thing.linkedItem.type]) or
-		not (tmthing.flags & MF_SHOOTABLE or timetravel.additionalHittables[tmthing.type]) then return false end
+end
 
-	if thing.linkedItem.type == MT_PLAYER and tmthing.type == MT_PLAYER -- Switch places.
-		if (tmthing.timetravel.touchEchoCD or 0) <= 0 and (thing.linkedItem.timetravel.touchEchoCD or 0) <= 0 then
-			thing.linkedItem.timetravel.delayedMobjReaction = tmthing
-			thing.linkedItem.timetravel.delayedMobjReactionDir = timetravel.getNormalizedVectors(tmthing.momx, tmthing.momy)
-			thing.linkedItem.timetravel.delayedMobjReactionZPos = tmthing.z
-		end
-		
-		tmthing.timetravel.touchEchoCD = timetravel.echoBonkCooldown
-		thing.linkedItem.timetravel.touchEchoCD = timetravel.echoBonkCooldown
-	else -- Hitting an item echo puts you into its timeline.
-		local playerMobj, itemMobj
-		if thing.linkedItem.type == MT_PLAYER then
-			playerMobj = thing.linkedItem
-			itemMobj = tmthing
-		else
-			playerMobj = tmthing
-			itemMobj = thing.linkedItem
-		end
-		
-		if (playerMobj.timetravel.touchEchoCD or 0) <= 0 and 
-			(itemMobj.flags & MF_SHOOTABLE == 0 or (itemMobj.flags & MF_SHOOTABLE and not (itemMobj.target == playerMobj and itemMobj.threshold > 0))) and
-			itemMobj.health > 0 then
-			-- Hitting an item echo puts you into its timeline.
-			playerMobj.timetravel.delayedMobjReaction = itemMobj
-			playerMobj.timetravel.delayedMobjReactionDir = timetravel.getNormalizedVectors(itemMobj.momx, itemMobj.momy)
-			playerMobj.timetravel.delayedMobjReactionZPos = itemMobj.z
-			
-			playerMobj.timetravel.touchEchoCD = timetravel.echoItemCollideCooldown
-			itemMobj.timetravel.touchEchoCD = timetravel.echoItemCollideCooldown
-		elseif itemMobj.threshold <= 0 then
-			playerMobj.timetravel.touchEchoCD = timetravel.echoItemCollideCooldown
-			itemMobj.timetravel.touchEchoCD = timetravel.echoItemCollideCooldown
-		end
-	end
-	
-	return false
-
-end, MT_ECHOGHOST)
-
--- Fix false cases of the echoes just dying if you touch them weird.
-addHook("TouchSpecial", function(special, toucher)
-	return true
-end, MT_ECHOGHOST)
-
-addHook("MobjThinker", function(collisionReceiver)
-	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
-	
+timetravel.echoes_CollisionHandler = function(collisionReceiver)
 	if collisionReceiver.linkedItem == nil then return end
 	if collisionReceiver.timetravel == nil then return end
 	if collisionReceiver.timetravel.touchEchoCD == nil then return end
@@ -259,52 +199,165 @@ addHook("MobjThinker", function(collisionReceiver)
 	if collisionReceiver.timetravel.touchEchoCD > 0 then
 		collisionReceiver.timetravel.touchEchoCD = $ - 1
 	end
-end)
+end
 
-addHook("MobjDeath", function(mo, inflictor, source)
-	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
-	if mo.type == MT_ECHOGHOST then return end
-	if mo.linkedItem == nil or mo.linkedItem.valid == false then return end
+timetravel.echoes_Thinker = function(mobj)
+	local linkedItem = mobj.linkedItem
+	local xOffset, yOffset = timetravel.determineTimeWarpPosition(linkedItem)
 	
-	timetravel.playEchoDeathSound(mo.linkedItem)
+	local movement = P_MoveOrigin
+	if mobj.justEchoTeleported then movement = P_SetOrigin end
+	movement(mobj, linkedItem.x + xOffset, linkedItem.y + yOffset, linkedItem.z)
+	
+	if mobj.justEchoTeleported and linkedItem.player then
+		-- We play a sound later on, and we cannot play another new sound with the same origin apparently.
+		-- So we create a new one, temporarily. Only for the player tho otherwise it's confusing.
+		local soundHack = P_SpawnMobj(mobj.x, mobj.y, mobj.z, MT_OVERLAY)
+		soundHack.target = mobj
+		soundHack.state = S_INVISIBLE
+		soundHack.fuse = 2
+		S_StartSound(soundHack, sfx_ttshit)
+	end
+	
+	mobj.justEchoTeleported = false
+	
+	if linkedItem.type == MT_PLAYER then
+		mobj.skin = linkedItem.skin
+	end
+	
+	mobj.color = linkedItem.color
+	mobj.sprite = linkedItem.sprite
+	mobj.scale = linkedItem.scale
+	mobj.destscale = linkedItem.destscale
+	mobj.height = linkedItem.height
+	mobj.radius = linkedItem.radius
+	
+	if linkedItem.type == MT_PLAYER then
+		mobj.angle = linkedItem.player.frameangle
+	else mobj.angle = linkedItem.angle
+	end
+	
+	mobj.flags2 = linkedItem.flags2
+	mobj.colorized = true
+	
+	local transFlag = 0	
+	if (linkedItem.flags & MF_SHOOTABLE) then
+		transFlag = FF_TRANS50 - abs(FF_TRANS10 * (((TICRATE/2) - (leveltime % TICRATE)) / 4))
+	elseif (linkedItem.frame & FF_TRANSMASK) == 0 then
+		transFlag = FF_TRANS50
+	end	
+	if transFlag ~= 0 then mobj.frame = $ & (~FF_TRANSMASK) end
+	
+	mobj.frame = linkedItem.frame | transFlag
+	
+	timetravel.playEchoIdleBehaviour(mobj)
+end
+
+addHook("MobjCollide", function(thing, tmthing)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
+	
+	-- Height checks.
+	if tmthing.momz < 0 then
+		if tmthing.z + tmthing.momz > thing.z + thing.height then
+			return false
+		end
+	elseif tmthing.z > thing.z + thing.height then
+		return false
+	end
+	
+	if tmthing.momz > 0 then
+		if tmthing.z + tmthing.height + tmthing.momz < thing.z then
+			return false
+		end
+	elseif tmthing.z + tmthing.height < thing.z then
+		return false
+	end
+	
+	if thing.linkedItem == nil or thing.linkedItem.valid == false then return false end
+	if tmthing.linkedItem == nil or tmthing.linkedItem.valid == false then return false end
+	if thing == tmthing.linkedItem or thing.linkedItem == tmthing then return false end -- don't let things touch themselves...
+	-- only relevant to shootables and things we wanna hit.
+	if not (thing.linkedItem.flags & MF_SHOOTABLE or timetravel.additionalHittables[thing.linkedItem.type]) or
+		not (tmthing.flags & MF_SHOOTABLE or timetravel.additionalHittables[tmthing.type]) then return false end
+		
+	if thing.linkedItem.type == MT_PLAYER and tmthing.type == MT_PLAYER -- Switch places.
+		local thingTTTable = thing.linkedItem.timetravel
+		local tmthingTTTable = tmthing.timetravel
+	
+		if (tmthingTTTable.touchEchoCD or 0) <= 0 and (thingTTTable.touchEchoCD or 0) <= 0 then
+			thingTTTable.delayedMobjReaction = tmthing
+			thingTTTable.delayedMobjReactionDir = timetravel.getNormalizedVectors(tmthing.momx, tmthing.momy)
+			thingTTTable.delayedMobjReactionZPos = tmthing.z
+		end
+		
+		tmthingTTTable.touchEchoCD = timetravel.echoBonkCooldown
+		thingTTTable.touchEchoCD = timetravel.echoBonkCooldown
+	else -- Hitting an item echo puts you into its timeline.
+		local playerMobj, itemMobj
+		if thing.linkedItem.type == MT_PLAYER then
+			playerMobj = thing.linkedItem
+			itemMobj = tmthing
+		else
+			playerMobj = tmthing
+			itemMobj = thing.linkedItem
+		end
+		
+		local playerMobjTTTable = playerMobj.timetravel
+		local itemMobjTTTable = itemMobj.timetravel
+		
+		if (playerMobjTTTable.touchEchoCD or 0) <= 0 and 
+			(itemMobj.flags & MF_SHOOTABLE == 0 or (itemMobj.flags & MF_SHOOTABLE and not (itemMobj.target == playerMobj and itemMobj.threshold > 0))) and
+			itemMobj.health > 0 then
+			-- Hitting an item echo puts you into its timeline.
+			playerMobjTTTable.delayedMobjReaction = itemMobj
+			playerMobjTTTable.delayedMobjReactionDir = timetravel.getNormalizedVectors(itemMobj.momx, itemMobj.momy)
+			playerMobjTTTable.delayedMobjReactionZPos = itemMobj.z
+			
+			playerMobjTTTable.touchEchoCD = timetravel.echoItemCollideCooldown
+			itemMobjTTTable.touchEchoCD = timetravel.echoItemCollideCooldown
+		elseif itemMobj.threshold <= 0 then
+			playerMobjTTTable.touchEchoCD = timetravel.echoItemCollideCooldown
+			itemMobjTTTable.touchEchoCD = timetravel.echoItemCollideCooldown
+		end
+	end
+	
+	return false
+
+end, MT_ECHOGHOST)
+
+-- Fix false cases of the echoes just dying if you touch them weird.
+addHook("TouchSpecial", function(special, toucher)
+	return true
+end, MT_ECHOGHOST)
+
+addHook("MobjDeath", function(mobj, inflictor, source)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if mobj.type == MT_ECHOGHOST then return end
+	if mobj.linkedItem == nil or mobj.linkedItem.valid == false then return end
+	
+	timetravel.playEchoDeathSound(mobj.linkedItem)
 	-- If this is a death caused by a clash, spawn the item clash mobj
 	-- (this is technically a hack but you've seen the rest of the code, right?)
 	if inflictor and source and
-		timetravel.isClashableItem(mo.type) and timetravel.isClashableItem(inflictor.type) and inflictor == source then
-		local xOffset, yOffset = timetravel.determineTimeWarpPosition(mo)
-		local x = (mo.x/2 + inflictor.x/2) + xOffset
-		local y = (mo.y/2 + inflictor.y/2) + yOffset
-		local z = (mo.z/2 + inflictor.z/2)
+		timetravel.isClashableItem(mobj.type) and timetravel.isClashableItem(inflictor.type) and inflictor == source then
+		local xOffset, yOffset = timetravel.determineTimeWarpPosition(mobj)
+		local x = (mobj.x/2 + inflictor.x/2) + xOffset
+		local y = (mobj.y/2 + inflictor.y/2) + yOffset
+		local z = (mobj.z/2 + inflictor.z/2)
 		P_SpawnMobj(x, y, z, MT_ITEMCLASH)
 	end
 end)
 
--- Eggman Monitor-specific hack to play its pickup sound and effects.
-local function eggmanSoundHandler(special, toucher)
-	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
-	if special.linkedItem == nil or special.linkedItem.valid == false then return end
-	
-	if (special.target == toucher or special.target == toucher.target) and special.threshold > 0 then return end
-	if special.health <= 0 or toucher.health <= 0 then return end
-	local player = toucher.player
-	if not (player and player.valid) then return end
-	if not P_CanPickupItem(player, 2) then return end
-
-	local poof = P_SpawnMobj(special.linkedItem.x, special.linkedItem.y, special.linkedItem.z, MT_EXPLODE)
-	poof.frame = poof.frame | FF_TRANS50
-	S_StartSound(poof, special.info.deathsound)
-end
-
-addHook("TouchSpecial", eggmanSoundHandler, MT_EGGMANITEM)
-addHook("TouchSpecial", eggmanSoundHandler, MT_EGGMANITEM_SHIELD)
+addHook("TouchSpecial", function(special, toucher) timetravel.eggmanSoundHandler(special, toucher) end, MT_EGGMANITEM)
+addHook("TouchSpecial", function(special, toucher) timetravel.eggmanSoundHandler(special, toucher) end, MT_EGGMANITEM_SHIELD)
 
 -- Process this after the eggman handling:
-addHook("MobjRemoved", function(mo)
+addHook("MobjRemoved", function(mobj)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
-	if mo.type == MT_ECHOGHOST then return end
-	if mo.linkedItem == nil or mo.linkedItem.valid == false then return end
+	if mobj.type == MT_ECHOGHOST then return end
+	if mobj.linkedItem == nil or mobj.linkedItem.valid == false then return end
 	
-	P_RemoveMobj(mo.linkedItem)
+	P_RemoveMobj(mobj.linkedItem)
 end)
 
 -- Makes echo explosions work
@@ -312,59 +365,37 @@ addHook("PlayerExplode", function(player, inflictor, source)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
 	if not (inflictor and inflictor.valid) then return end
 	
-	local mo = player.mo
-	if not (mo.linkedItem and mo.linkedItem.valid) then return end
+	local mobj = player.mo
+	local linkedItem = mobj.linkedItem
+	if not (linkedItem and linkedItem.valid) then return end
 		
 	if inflictor.type == MT_SPBEXPLOSION or inflictor.type == MT_MINEEXPLOSION then
-		K_SpawnMineExplosion(mo.linkedItem, mo.color)
+		K_SpawnMineExplosion(linkedItem, mobj.color)
 	end
 end)
 
-addHook("MobjThinker", function(mo)
+addHook("MobjThinker", function(mobj)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
 	if not timetravel.isActive then return end
 	if leveltime < 3 then return end
-	if not (mo and mo.valid) then return end
-	if not mo.echoable then return end
-	if mo.linkedItem ~= nil then return end
 	
-	if timetravel.performSpecialSpawnCode(mo) then return end
-	
-	local targetPlayer = mo.target
-	local tracerPlayer = mo.tracer
-	if targetPlayer ~= nil then targetPlayer = $.player end
-	if tracerPlayer ~= nil then tracerPlayer = $.player end
+	if not (mobj and mobj.valid) then return end
 
-	local player = (mo.player or targetPlayer) or tracerPlayer
-	if player == nil or player.mo.timetravel == nil then return end
-	
-	local xOffset, yOffset = timetravel.determineTimeWarpPosition(player.mo)
-	
-	local echoItem = timetravel.SpawnEchoMobj(mo)
-	P_SetOrigin(echoItem, mo.x + xOffset, mo.y + yOffset, mo.z)
-	
-	if mo.timetravel == nil and mo.type ~= MT_PLAYER then mo.timetravel = {} end
-	echoItem.timetravel = {}
-	
-	mo.timetravel.isTimeWarped 			= player.mo.timetravel.isTimeWarped
-	echoItem.timetravel.isTimeWarped 	= not player.mo.timetravel.isTimeWarped
-	
-	mo.timetravel.touchEchoCD 			= 0
-	
-	echoItem.linkedItem = mo
-	mo.linkedItem 		= echoItem
-	
-	timetravel.playEchoSpawnSound(echoItem)
-	if mo.flags & MF_SHOOTABLE and mo.type ~= MT_EGGMANITEM and mo.type ~= MT_EGGMANITEM_SHIELD then
-		P_SpawnShadowMobj(echoItem)
+	if mobj.type == MT_ECHOGHOST and mobj.linkedItem and mobj.linkedItem.valid then -- Movement thinker for echo ghosts
+		timetravel.echoes_Thinker(mobj)
+	else
+		-- Spawn procedure for other mobjs - a normal mobj will have an echo if applicable.
+		timetravel.echoes_SpawnHandler(mobj)
+		-- Handle echo-to-nonecho collision stuff here.
+		timetravel.echoes_CollisionHandler(mobj)
 	end
 end)
 
-addHook("MobjSpawn", function(mo)
+addHook("MobjSpawn", function(mobj)
 	-- Check if this is a echoes-able mobj.
 	for _, value in ipairs(timetravel.validTypesToEcho) do
-		if value == mo.type then
-			mo.echoable = true
+		if value == mobj.type then
+			mobj.echoable = true
 			break
 		end
 	end
@@ -378,7 +409,7 @@ local function initializeEchoHooks()
 
 	for _, value in ipairs(timetravel.typesToEcho) do
 		local mobjFound = timetravel.safelyCheckForMTExistence(value)
-		if mobjFound ~= nil then table.insert(timetravel.validTypesToEcho, mobjFound) end
+		if mobjFound ~= nil then table_insert(timetravel.validTypesToEcho, mobjFound) end
 	end
 end
 

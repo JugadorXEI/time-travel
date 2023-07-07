@@ -5,6 +5,54 @@ if timetravel.ECHOES_FUNCS_VERSION == nil or timetravel.ECHOES_FUNCS_VERSION < E
 
 local TICRATE = TICRATE
 local FRACUNIT = FRACUNIT
+local FRACBITS = FRACBITS
+local k_respawn = k_respawn
+local k_enginesnd = k_enginesnd
+local k_growshrinktimer = k_growshrinktimer
+local k_invincibilitytimer = k_invincibilitytimer
+local k_drift = k_drift
+local k_driftcharge = k_driftcharge
+local BT_ACCELERATE = BT_ACCELERATE
+local MFE_VERTICALFLIP = MFE_VERTICALFLIP
+local MF2_OBJECTFLIP = MF2_OBJECTFLIP
+local MF_DONTENCOREMAP = MF_DONTENCOREMAP
+local MF_SHOOTABLE = MF_SHOOTABLE
+local FF_TRANSMASK = FF_TRANSMASK
+local FF_TRANSSHIFT = FF_TRANSSHIFT
+local FF_TRANS50 = FF_TRANS50
+local PF_SKIDDOWN = PF_SKIDDOWN
+local tr_trans50 = tr_trans50
+
+local ANGLE_180 = ANGLE_180
+local ANG10 = ANG10
+
+local sfx_None = sfx_None
+local sfx_krta00 = sfx_krta00
+local sfx_alarmg = sfx_alarmg
+local sfx_alarmi = sfx_alarmi
+local sfx_kgrow = sfx_kgrow
+local sfx_kinvnc = sfx_kinvnc
+local sfx_screec = sfx_screec
+local sfx_s23c = sfx_s23c
+
+local FixedHypot = FixedHypot
+local FixedDiv = FixedDiv
+local FixedMul = FixedMul
+local S_SoundPlaying = S_SoundPlaying
+local S_StopSoundByID = S_StopSoundByID
+local S_StartSoundAtVolume = S_StartSoundAtVolume
+local S_StartSound = S_StartSound
+local CV_FindVar = CV_FindVar
+local P_SpawnMobj = P_SpawnMobj
+local R_PointToAngle2 = R_PointToAngle2
+local K_GetKartDriftSparkValue = K_GetKartDriftSparkValue
+local P_IsObjectOnGround = P_IsObjectOnGround
+local P_CanPickupItem = P_CanPickupItem
+local pcall = pcall
+local type = type
+local abs = abs
+
+local kartinvinsfx = CV_FindVar("kartinvinsfx")
 
 local starttime = 6*TICRATE + 3*TICRATE/4
 
@@ -53,16 +101,18 @@ timetravel.K_UpdateEngineSoundsEX = function(player, cmd)
 
 	class = s + (3 * w)
 	
+	local pks = player.kartstuff
+	
 	if leveltime < 8 or player.spectator or player.exiting then
 		-- Silence the engines, and reset sound number while we're at it.
-		player.kartstuff[k_enginesnd] = 0
+		pks[k_enginesnd] = 0
 		return
 	end
 
 	-- .25 seconds of wait time between each engine sound playback
 	if leveltime % 8 then return end
 
-	if (leveltime >= (starttime - (2*TICRATE)) and leveltime <= starttime) or player.kartstuff[k_respawn] == 1 then
+	if (leveltime >= (starttime - (2*TICRATE)) and leveltime <= starttime) or pks[k_respawn] == 1 then
 		-- Startup boosts only want to check for BT_ACCELERATE being pressed.
 		if (cmd.buttons & BT_ACCELERATE) then targetsnd = 12
 		else targetsnd = 0 end
@@ -74,14 +124,15 @@ timetravel.K_UpdateEngineSoundsEX = function(player, cmd)
 	if targetsnd < 0 then targetsnd = 0 end
 	if targetsnd > 12 then targetsnd = 12 end
 
-	if player.kartstuff[k_enginesnd] < targetsnd then player.kartstuff[k_enginesnd] = $ + 1 end
-	if player.kartstuff[k_enginesnd] > targetsnd then player.kartstuff[k_enginesnd] = $ - 1 end
+	if pks[k_enginesnd] < targetsnd then pks[k_enginesnd] = $ + 1 end
+	if pks[k_enginesnd] > targetsnd then pks[k_enginesnd] = $ - 1 end
 
-	if player.kartstuff[k_enginesnd] < 0 then player.kartstuff[k_enginesnd] = 0 end
-	if player.kartstuff[k_enginesnd] > 12 then player.kartstuff[k_enginesnd] = 12 end
+	if pks[k_enginesnd] < 0 then pks[k_enginesnd] = 0 end
+	if pks[k_enginesnd] > 12 then pks[k_enginesnd] = 12 end
 
 	-- This code calculates how many players (and thus, how many engine sounds) are within ear shot,
 	-- and rebalances the volume of your engine sound based on how far away they are.
+	local playerMo = player.mo
 
 	-- This results in multiple things:
 	-- - When on your own, you will hear your own engine sound extremely clearly.
@@ -91,22 +142,21 @@ timetravel.K_UpdateEngineSoundsEX = function(player, cmd)
 		local thisvol = 0
 		local dist
 		
-		if not otherPlayer.mo or not otherPlayer.mo.valid then continue end -- This player doesn't exist.
+		local otherPlayerMo = otherPlayer.mo
+		if not (otherPlayerMo and otherPlayerMo.valid) then continue end -- This player doesn't exist.
 		if otherPlayer.spectator or otherPlayer.exiting then continue end -- This player isn't playing an engine sound.
 		if player == otherPlayer or timetravel.isDisplayPlayer(otherPlayer) > -1 then continue end -- Don't dampen yourself!
 		
-		local otherPlayerMo = otherPlayer.mo
-		
-		if otherPlayer.mo.timetravel and player.mo.timetravel.isTimeWarped ~= otherPlayer.mo.timetravel.isTimeWarped then
+		if otherPlayerMo.timetravel and playerMo.timetravel.isTimeWarped ~= otherPlayerMo.timetravel.isTimeWarped then
 			otherPlayerMo = otherPlayerMo.linkedItem
 			if not (otherPlayerMo and otherPlayerMo.valid) then return end
 		end
 
 		dist = FixedHypot(
 			FixedHypot(
-				player.mo.x - otherPlayerMo.x,
-				player.mo.y - otherPlayerMo.y),
-				player.mo.z - otherPlayerMo.z) / 2
+				playerMo.x - otherPlayerMo.x,
+				playerMo.y - otherPlayerMo.y),
+				playerMo.z - otherPlayerMo.z) / 2
 
 		dist = FixedDiv(dist, mapobjectscale)
 
@@ -124,26 +174,33 @@ timetravel.K_UpdateEngineSoundsEX = function(player, cmd)
 
 	if volume <= 0 then return end -- Don't need to play the sound at all.
 
-	S_StartSoundAtVolume(player.mo.linkedItem, (sfx_krta00 + player.kartstuff[k_enginesnd]) + (class * numsnds), volume)
+	S_StartSoundAtVolume(playerMo.linkedItem, (sfx_krta00 + pks[k_enginesnd]) + (class * numsnds), volume)
+end
+
+local function stopThis(mobj, sfxnum, this)
+	if sfxnum ~= this and S_SoundPlaying(mobj, this) then
+		S_StopSoundByID(mobj, this)
+	end
 end
 
 timetravel.K_UpdateInvincibilitySoundsEX = function(player, mobj)
-
-	if not (player and player.mo and player.mo.valid) then return end
+	local playerMo = player.mo
+	if not (player and playerMo and playerMo.valid) then return end
 
 	local sfxnum = sfx_None
 
-	if player.mo.health > 0 and timetravel.isDisplayPlayer(player) == -1 then
-		if CV_FindVar("kartinvinsfx").value then
-			if player.kartstuff[k_growshrinktimer] > 0 then -- Prioritize Grow
+	if playerMo.health > 0 and timetravel.isDisplayPlayer(player) == -1 then
+		local pks = player.kartstuff
+		if kartinvinsfx.value then
+			if pks[k_growshrinktimer] > 0 then -- Prioritize Grow
 				sfxnum = sfx_alarmg
-			elseif player.kartstuff[k_invincibilitytimer] > 0 then
+			elseif pks[k_invincibilitytimer] > 0 then
 				sfxnum = sfx_alarmi
 			end
 		else
-			if player.kartstuff[k_growshrinktimer] > 0 then
+			if pks[k_growshrinktimer] > 0 then
 				sfxnum = sfx_kgrow
-			elseif player.kartstuff[k_invincibilitytimer] > 0 then
+			elseif pks[k_invincibilitytimer] > 0 then
 				sfxnum = sfx_kinvnc
 			end
 		end
@@ -153,16 +210,59 @@ timetravel.K_UpdateInvincibilitySoundsEX = function(player, mobj)
 		S_StartSound(mobj, sfxnum)
 	end
 	
-	local stopThis = function(this)
-		if sfxnum ~= this and S_SoundPlaying(mobj, this) then
-			S_StopSoundByID(mobj, this)
-		end
+	stopThis(mobj, sfxnum, sfx_alarmi)
+	stopThis(mobj, sfxnum, sfx_alarmg)
+	stopThis(mobj, sfxnum, sfx_kinvnc)
+	stopThis(mobj, sfxnum, sfx_kgrow)
+end
+
+timetravel.P_SkidAndDriftNoises = function(player, mobj)
+
+	local anglediff = 0
+	local pks = player.kartstuff
+	local linkedItem = mobj.linkedItem
+	local linkedItemAngle = linkedItem.angle
+	
+	if player.pflags & PF_SKIDDOWN then
+		anglediff = abs(linkedItemAngle - player.frameangle)
+		if leveltime % 6 == 0 then S_StartSound(mobj, sfx_screec) end
+	elseif player.speed >= 5<<FRACBITS then
+		local playerangle = linkedItemAngle
+		
+		if player.cmd.forwardmove < 0 then playerangle = $ + ANGLE_180 end
+		anglediff = abs(playerangle - R_PointToAngle2(0, 0, player.rmomx, player.rmomy))
 	end
 	
-	stopThis(sfx_alarmi)
-	stopThis(sfx_alarmg)
-	stopThis(sfx_kinvnc)
-	stopThis(sfx_kgrow)
+	if anglediff > ANG10 * 4 then
+		if leveltime % 6 == 0 then S_StartSound(mobj, sfx_screec) end
+	end
+
+	-- Drift release noise.
+	local dsr = K_GetKartDriftSparkValue(player)
+	if pks[k_drift] ~= -5 and pks[k_drift] ~= 5 and
+		pks[k_driftcharge] >= dsr and P_IsObjectOnGround(linkedItem) then
+		S_StartSound(mobj, sfx_s23c)
+	end
+	
+end
+
+-- Eggman Monitor-specific hack to play its pickup sound and effects.
+timetravel.eggmanSoundHandler = function(special, toucher)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	
+	local linkedItem = special.linkedItem
+	if linkedItem == nil or linkedItem.valid == false then return end
+	
+	if (special.target == toucher or special.target == toucher.target) and special.threshold > 0 then return end
+	if special.health <= 0 or toucher.health <= 0 then return end
+	
+	local player = toucher.player
+	if not (player and player.valid) then return end
+	if not P_CanPickupItem(player, 2) then return end
+
+	local poof = P_SpawnMobj(linkedItem.x, linkedItem.y, linkedItem.z, MT_EXPLODE)
+	poof.frame = poof.frame | FF_TRANS50
+	S_StartSound(poof, special.info.deathsound)
 end
 
 -- Partial copy of P_SpawnGhostMobj
