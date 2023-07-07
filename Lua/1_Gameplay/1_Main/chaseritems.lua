@@ -275,7 +275,10 @@ addHook("MobjThinker", function(mo)
 			
 			if owner and ownerPlayer then
 				local finalJawzTarget = timetravel.K_FindJawzTargetEX(owner, ownerPlayer)
-				if finalJawzTarget then itemTarget = finalJawzTarget.mo end
+				if finalJawzTarget then
+					itemTarget = finalJawzTarget.mo
+					mo.tracer = itemTarget
+				end
 			end
 		end
 		justSpawned = true
