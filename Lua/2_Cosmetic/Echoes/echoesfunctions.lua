@@ -73,6 +73,29 @@ timetravel.isClashableItem = function(mobjtype)
 			or mobjtype == MT_BALLHOG
 end
 
+timetravel.canDisplayPlayerHearThis = function(mobj)
+
+	--[[
+	The display player(s) will not be able to hear things from
+	a different timeline, this is an optimization measure.
+	
+	If any display player is spectating, then they will always be hearable.
+	Otherwise, players in-game won't have sounds in other timelines play.
+	(Only one timeline or the other.)
+	(This kinda just exists to mute the engine sound function for players)
+	]]
+
+	for i = 0, 3 do
+		if displayplayers[i] and (displayplayers[i].spectator or
+			displayplayers[i].mo.timetravel.isTimeWarped ~= mobj.isTimeWarped) then
+			return true
+		end
+	end
+	
+	return false
+
+end
+
 timetravel.K_UpdateEngineSoundsEX = function(player, cmd)
 	
 	local numsnds = 13

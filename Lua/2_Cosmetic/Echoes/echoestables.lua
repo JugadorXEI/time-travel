@@ -200,6 +200,8 @@ timetravel.echoIdleSounds = {
 		local player = mobj.linkedItem.player
 		if not player then return end
 		
+		if not timetravel.canDisplayPlayerHearThis(mobj.linkedItem) then return end
+		
 		-- Engine sounds
 		timetravel.K_UpdateEngineSoundsEX(player, player.cmd)
 		
