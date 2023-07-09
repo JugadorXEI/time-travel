@@ -58,11 +58,11 @@ local function sortPositionTable(a, b)
 		if a[tableStarposts] == b[tableStarposts] then
 			return a[tableNextpos] < b[tableNextpos]
 		end
-		
-		return a[tableStarposts] < b[tableStarposts]
+
+		return a[tableStarposts] > b[tableStarposts]
 	end
-	
-	return a[tableLaps] < b[tableLaps]
+
+	return a[tableLaps] > b[tableLaps]
 end
 
 local function timeTravelWaypointsProcessing()
@@ -136,7 +136,7 @@ local function timeTravelWaypointsProcessing()
 		player.timetravelconsts.kartPosition = position
 		pks[k_position] = position
 		
-		-- print("#" + i + ": " + player.name)
+		-- print("#" + i + ": " + player.name + "(" + positionTable[i][2] + ", " + positionTable[i][3] + ", " + positionTable[i][4] + ")")
 	end
 	
 	-- print("----------")
