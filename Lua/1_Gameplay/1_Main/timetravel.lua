@@ -43,8 +43,7 @@ timetravel.backroomsZ = 0
 
 timetravel.hookFuncs = {}
 
-local sfx_ttshif, sfx_ttshit, sfx_ttfail, sfx_ttfrag, sfx_cdpast, sfx_cdfutr =
-	freeslot("sfx_ttshif", "sfx_ttshit", "sfx_ttfail", "sfx_ttfrag", "sfx_cdpast", "sfx_cdfutr")
+freeslot("sfx_ttshif", "sfx_ttshit", "sfx_ttfail", "sfx_ttfrag", "sfx_cdpast", "sfx_cdfutr")
 
 sfxinfo[sfx_ttshif] = {
 	singular = false,
