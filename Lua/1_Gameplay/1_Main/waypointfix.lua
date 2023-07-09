@@ -49,9 +49,21 @@ end
 	We then sort this data by lap, startpost and position.
 	Finally we assign the final player positions.
 ]]
+local tableLaps = 2
+local tableStarposts = 3
+local tableNextpos = 4
+
 local function sortPositionTable(a, b)
-		return a[2] < b[2] or a[3] < b[3] or a[4] < b[4]
+	if a[tableLaps] == b[tableLaps] then
+		if a[tableStarposts] == b[tableStarposts] then
+			return a[tableNextpos] < b[tableNextpos]
+		end
+		
+		return a[tableStarposts] < b[tableStarposts]
 	end
+	
+	return a[tableLaps] < b[tableLaps]
+end
 
 local function timeTravelWaypointsProcessing()
 	local positionTable = {}
