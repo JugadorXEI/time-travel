@@ -49,14 +49,19 @@ end
 	We then sort this data by lap, startpost and position.
 	Finally we assign the final player positions.
 ]]
+local function sortPositionTable(a, b)
+		return a[2] < b[2] or a[3] < b[3] or a[4] < b[4]
+	end
+
 local function timeTravelWaypointsProcessing()
 	local positionTable = {}
 	
 	for player in players.iterate do
+		if not (player and player.valid) then continue end
 		if player.spectator then continue end
 		
 		local lap = player.laps
-		local startpostnum = player.starpostnum
+		local starpostnum = player.starpostnum
 		local nextpos = INT32_MAX
 		
 		local pMo = player.mo
@@ -68,7 +73,7 @@ local function timeTravelWaypointsProcessing()
 		pks[k_nextcheck] = 0
 		
 		local thisPlayerWaypoints = getWaypointTableToUse(player)
-		for _, mo in ipairs(thisPlayerWaypoints[startpostnum]) do
+		for _, mo in ipairs(thisPlayerWaypoints[starpostnum]) do
 			
 			local dist = FixedHypot(FixedHypot(mo.x - pMoX,
 								mo.y - pMoY),
@@ -78,7 +83,7 @@ local function timeTravelWaypointsProcessing()
 			prevWaypointNum = $ + 1
 		end
 		
-		for _, mo in ipairs(thisPlayerWaypoints[startpostnum + 1]) do
+		for _, mo in ipairs(thisPlayerWaypoints[starpostnum + 1]) do
 			
 			local dist = FixedHypot(FixedHypot(mo.x - pMoX,
 								mo.y - pMoY),
@@ -94,12 +99,12 @@ local function timeTravelWaypointsProcessing()
 		
 		nextpos = pks[k_prevcheck]
 		
-		table_insert(positionTable, {player, lap, startpostnum, nextpos})
+		table_insert(positionTable, {player, lap, starpostnum, nextpos})
 	end
 	
-	table_sort(positionTable, function(a, b)
-		return a[2] < b[2] or a[3] < b[3] or a[4] < b[4]
-	end)
+	if #positionTable <= 0 then return end -- This should NEVER happen.
+	
+	table_sort(positionTable, sortPositionTable)
 	
 	for i = 1, #positionTable do
 		local player = positionTable[i][1]
