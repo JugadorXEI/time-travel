@@ -103,6 +103,7 @@ local function xitemHandler()
 	if not dualjawzFunc 	then lib.getItemDataById(KRITEM_DUALJAWZ)["getfunc"] = function(p, getitem) end end
 	
 	addHook("MobjThinker", function(mo)
+		if not (mo and mo.valid) then return end
 		if not (kmp_floatingitemfuse and kmp_floatingitemfuse.value) then return end
 		-- I don't make an xitem check here because it would be paradoxical,
 		-- you can't have MT_FLOATINGXITEM without xItem.

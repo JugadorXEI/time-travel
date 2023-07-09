@@ -392,6 +392,7 @@ addHook("MobjThinker", function(mobj)
 	else
 		-- Spawn procedure for other mobjs - a normal mobj will have an echo if applicable.
 		timetravel.echoes_SpawnHandler(mobj)
+		if not (mobj and mobj.valid) then return end
 		-- Handle echo-to-nonecho collision stuff here.
 		timetravel.echoes_CollisionHandler(mobj)
 	end
