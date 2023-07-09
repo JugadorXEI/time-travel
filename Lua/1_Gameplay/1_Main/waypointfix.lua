@@ -109,7 +109,7 @@ local function timeTravelWaypointsProcessing()
 		if prevWaypointNum > 1 then pks[k_prevcheck] = $ / prevWaypointNum end
 		if nextWaypointNum > 1 then pks[k_nextcheck] = $ / nextWaypointNum end
 		
-		nextpos = pks[k_prevcheck]
+		nextpos = pks[k_nextcheck]
 		
 		table_insert(positionTable, {player, lap, starpostnum, nextpos})
 	end
