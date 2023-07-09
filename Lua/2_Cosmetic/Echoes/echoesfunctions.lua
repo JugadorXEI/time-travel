@@ -271,8 +271,6 @@ end
 
 -- Eggman Monitor-specific hack to play its pickup sound and effects.
 timetravel.eggmanSoundHandler = function(special, toucher)
-	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
-	
 	local linkedItem = special.linkedItem
 	if linkedItem == nil or linkedItem.valid == false then return end
 	

@@ -349,6 +349,9 @@ addHook("MobjDeath", function(mobj, inflictor, source)
 end)
 
 addHook("TouchSpecial", function(special, toucher)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
+
 	if special.type == MT_EGGMANITEM or special.type == MT_EGGMANITEM_SHIELD then
 		timetravel.eggmanSoundHandler(special, toucher)
 	end
