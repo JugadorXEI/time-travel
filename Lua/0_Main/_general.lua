@@ -139,6 +139,16 @@ timetravel.isDisplayPlayer = function(player)
 
 end
 
+timetravel.isLastPlayer = function(player)
+	for i = #players - 1, 0, -1 do
+		if players[i] and i == #player then
+			return true
+		end
+	end
+	
+	return false
+end
+
 timetravel.getNormalizedVectors = function(x, y)
 	if x == nil then x = 0 end
 	if y == nil then y = 0 end
