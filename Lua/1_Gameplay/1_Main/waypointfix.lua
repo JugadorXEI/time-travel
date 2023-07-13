@@ -49,9 +49,11 @@ end
 	We then sort this data by lap, startpost and position.
 	Finally we assign the final player positions.
 ]]
+local tablePlayer = 1
 local tableLaps = 2
 local tableStarposts = 3
 local tableNextpos = 4
+local tablePrevPos = 5
 
 local function sortPositionTable(a, b)
 	if a[tableLaps] == b[tableLaps] then
@@ -65,24 +67,22 @@ local function sortPositionTable(a, b)
 	return a[tableLaps] > b[tableLaps]
 end
 
+
+local positionTable = {}
 local function timeTravelWaypointsProcessing()
-	local positionTable = {}
-	
 	for player in players.iterate do
 		if not (player and player.valid) then continue end
 		if player.spectator then continue end
 		
 		local lap = player.laps
 		local starpostnum = player.starpostnum
-		local nextpos = INT32_MAX
+		local prevpos = 0
+		local nextpos = 0
 		
 		local pMo = player.mo
 		local pMoX, pMoY, pMoZ = pMo.x, pMo.y, pMo.z
 		local pks = player.kartstuff
 		local prevWaypointNum, nextWaypointNum = 0, 0
-		
-		pks[k_prevcheck] = 0
-		pks[k_nextcheck] = 0
 		
 		local thisPlayerWaypoints = getWaypointTableToUse(player)
 		for _, mo in ipairs(thisPlayerWaypoints[starpostnum]) do
@@ -91,7 +91,7 @@ local function timeTravelWaypointsProcessing()
 								mo.y - pMoY),
 								mo.z - pMoZ) >> FRACBITS
 
-			pks[k_prevcheck] = $ + dist
+			prevpos = $ + dist
 			prevWaypointNum = $ + 1
 		end
 		
@@ -102,24 +102,25 @@ local function timeTravelWaypointsProcessing()
 								mo.z - pMoZ) >> FRACBITS
 			
 
-			pks[k_nextcheck] = $ + dist
+			nextpos = $ + dist
 			nextWaypointNum = $ + 1
 		end
 		
-		if prevWaypointNum > 1 then pks[k_prevcheck] = $ / prevWaypointNum end
-		if nextWaypointNum > 1 then pks[k_nextcheck] = $ / nextWaypointNum end
+		if prevWaypointNum > 1 then prevpos = $ / prevWaypointNum end
+		if nextWaypointNum > 1 then nextpos = $ / nextWaypointNum end
 		
-		nextpos = pks[k_nextcheck]
-		
-		table_insert(positionTable, {player, lap, starpostnum, nextpos})
+		table_insert(positionTable, {player, lap, starpostnum, nextpos, prevpos})
 	end
 	
 	if #positionTable <= 0 then return end -- This should NEVER happen.
 	
 	table_sort(positionTable, sortPositionTable)
-	
+	-- print("----------")
+end
+
+local function timeTravelSetPositions()
 	for i = 1, #positionTable do
-		local player = positionTable[i][1]
+		local player = positionTable[i][tablePlayer]
 		local pks = player.kartstuff
 		
 		local oldPosition = player.timetravelconsts.kartPosition
@@ -135,11 +136,11 @@ local function timeTravelWaypointsProcessing()
 		
 		player.timetravelconsts.kartPosition = position
 		pks[k_position] = position
+		pks[k_nextcheck] = positionTable[i][tableNextpos]
+		pks[k_prevcheck] = positionTable[i][tablePrevPos]
 		
 		-- print("#" + i + ": " + player.name + "(" + positionTable[i][2] + ", " + positionTable[i][3] + ", " + positionTable[i][4] + ")")
 	end
-	
-	-- print("----------")
 end
 
 addHook("PlayerThink", function(player)
@@ -150,7 +151,10 @@ addHook("PlayerThink", function(player)
 	if player.spectator or (pMo == nil or pMo.valid == false) or 
 		not player.timetravelconsts then return end
 	
-	timeTravelWaypointsProcessing()
+	-- Only the last connected player processes this.
+	if timetravel.isLastPlayer(player) then timeTravelWaypointsProcessing() end
+	-- Because of K_KartUpdatePosition fuckery, this needs to happen every frame for each player.
+	timeTravelSetPositions()
 	
 	local pks = player.kartstuff
 	player.timetravelconsts.kartPosition = $ or 0
@@ -233,6 +237,7 @@ addHook("NetVars", function(network)
 	timetravel.presentWaypoints = network(timetravel.presentWaypoints)
 	timetravel.futureWaypoints = network(timetravel.futureWaypoints)
 	timetravel.numstarposts = network(timetravel.numstarposts)
+	positionTable = network(positionTable)
 end)
 
 timetravel.WAYPOINTS_VERSION = WAYPOINTS_VERSION
