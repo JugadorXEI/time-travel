@@ -13,18 +13,18 @@ local inOtherZone = nil
 local pastMusic = nil
 local futureMusic = nil
 
-addHook("ThinkFrame", function()
+timetravel.dynMusInit = function()
 	if timetravel.DYNMUS_VERSION > DYNMUS_VERSION then return end
-	if not timetravel.isActive then return end
 	-- Only care about the first display player here.
 	local mapheaders = mapheaderinfo[gamemap]
 	
-	if leveltime == 3 and mapheaders ~= nil then
-		pastMusic = mapheaders.musname
-		futureMusic = mapheaders.musname_future
-		inOtherZone = nil
-	end
-	
+	pastMusic = mapheaders.musname
+	futureMusic = mapheaders.musname_future
+	inOtherZone = nil
+end
+
+timetravel.dynMusThinker = function()
+	if timetravel.DYNMUS_VERSION > DYNMUS_VERSION then return end
 	if leveltime < (starttime + (TICRATE/2)) then return end
 	if pastMusic == nil or futureMusic == nil then return end
 	if consoleplayer ~= nil and consoleplayer.exiting > 0 then return end
@@ -46,7 +46,7 @@ addHook("ThinkFrame", function()
 	else
 		S_ChangeMusic(pastMusic, true, consoleplayer, 0, S_GetMusicPosition())
 	end
-end)
+end
 
 -- You need a music hook to prevent the game to reset to the default music on death.
 addHook("MusicChange", function(oldname, newname)
@@ -59,6 +59,11 @@ addHook("MusicChange", function(oldname, newname)
 	if (inOtherZone == true and newname == pastMusic) then
 		return true -- Don't do this, let the hook above change the music as needed.
 	end
+end)
+
+addHook("NetVars", function(network)
+	pastMusic = network(pastMusic)
+	futureMusic = network(futureMusic)
 end)
 
 timetravel.DYNMUS_VERSION = DYNMUS_VERSION

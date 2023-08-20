@@ -188,103 +188,96 @@ timetravel.handleThunderShieldZap = function(player)
 						linkedItem.y - thunderradius, linkedItem.y + thunderradius)
 end
 
-addHook("PreThinkFrame", function()
+timetravel.timeTravelInputThinker = function(player)
 	if timetravel.VERSION > VERSION then return end
-	if not timetravel.isActive then return end
 	
-	for player in players.iterate do
-		local pMo = player.mo
-		if not (pMo and pMo.valid and not player.spectator) then
-			player.timetravelconsts = $ or {}
-			player.timetravelconsts.spectatorTimer = $ or 0
-			
-			if player.timetravelconsts.spectatorTimer >= TICRATE then
-				player.timetravelconsts.starpostStatus = false
-				player.timetravelconsts.starpostNumOld = 0
-			else
-				player.timetravelconsts.spectatorTimer = $ + 1
-			end
-			
-			continue
+	local pMo = player.mo
+	if not (pMo and pMo.valid and not player.spectator) then
+		player.timetravelconsts = $ or {}
+		player.timetravelconsts.spectatorTimer = $ or 0
+		
+		if player.timetravelconsts.spectatorTimer >= TICRATE then
+			player.timetravelconsts.starpostStatus = false
+			player.timetravelconsts.starpostNumOld = 0
+		else
+			player.timetravelconsts.spectatorTimer = $ + 1
 		end
 		
-		local leveltime = leveltime
-		if leveltime == 2 then -- Init
-			pMo.timetravel = {}
-			pMo.timetravel.isTimeWarped = false
-			player.timetravelconsts = {}
-		end
-		
-		-- Intro teleports:
-		if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then timetravel.teleport(pMo) end
-		-- Don't allow player input until the race starts.
-		if leveltime < starttime then continue end
-		
-		if player.cmd.buttons & BT_ATTACK and not player.timetravelconsts.holdingItemButton then
-			if not timetravel.isInDamageState(player) and not timetravel.canUseItem(player) and 
-				(pMo.timetravel.teleportCooldown == nil or pMo.timetravel.teleportCooldown <= 0) then
-				timetravel.teleport(pMo)
-			elseif not timetravel.isInDamageState(player) and timetravel.canUseItem(player) and
-				player.kartstuff[k_respawn] == 0 and player.kartstuff[k_itemtype] == KITEM_THUNDERSHIELD then
-				timetravel.handleThunderShieldZap(player)
-			elseif not timetravel.canUseItem(player) and player.kartstuff[k_eggmanheld] == 0 then -- INCORRECTLY LOUD BUZZER
-				S_StartSound(nil, sfx_ttfail, player)
-			end
-			
-			player.timetravelconsts.holdingItemButton = true
-		elseif not (player.cmd.buttons & BT_ATTACK) and player.timetravelconsts.holdingItemButton then
-			player.timetravelconsts.holdingItemButton = false
-		end
-		
-		-- Checkpoint Nums:		
-		if player.starpostnum ~= player.timetravelconsts.starpostNumOld then
-			if player.starpostnum == 0 then
-				player.timetravelconsts.starpostStatus = false
-			else
-				player.timetravelconsts.starpostStatus = player.mo.timetravel.isTimeWarped
-			end
-		end
-
-		player.timetravelconsts.starpostNumOld = player.starpostnum
-		player.timetravelconsts.spectatorTimer = 0
+		continue
 	end
-end)
+	
+	local leveltime = leveltime
+	if leveltime == 2 then -- Init
+		pMo.timetravel = {}
+		pMo.timetravel.isTimeWarped = false
+		player.timetravelconsts = {}
+	end
+	
+	-- Intro teleports:
+	if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then timetravel.teleport(pMo) end
+	-- Don't allow player input until the race starts.
+	if leveltime < starttime then continue end
+	
+	if player.cmd.buttons & BT_ATTACK and not player.timetravelconsts.holdingItemButton then
+		if not timetravel.isInDamageState(player) and not timetravel.canUseItem(player) and 
+			(pMo.timetravel.teleportCooldown == nil or pMo.timetravel.teleportCooldown <= 0) then
+			timetravel.teleport(pMo)
+		elseif not timetravel.isInDamageState(player) and timetravel.canUseItem(player) and
+			player.kartstuff[k_respawn] == 0 and player.kartstuff[k_itemtype] == KITEM_THUNDERSHIELD then
+			timetravel.handleThunderShieldZap(player)
+		elseif not timetravel.canUseItem(player) and player.kartstuff[k_eggmanheld] == 0 then -- INCORRECTLY LOUD BUZZER
+			S_StartSound(nil, sfx_ttfail, player)
+		end
+		
+		player.timetravelconsts.holdingItemButton = true
+	elseif not (player.cmd.buttons & BT_ATTACK) and player.timetravelconsts.holdingItemButton then
+		player.timetravelconsts.holdingItemButton = false
+	end
+	
+	-- Checkpoint Nums:		
+	if player.starpostnum ~= player.timetravelconsts.starpostNumOld then
+		if player.starpostnum == 0 then
+			player.timetravelconsts.starpostStatus = false
+		else
+			player.timetravelconsts.starpostStatus = player.mo.timetravel.isTimeWarped
+		end
+	end
 
-addHook("PostThinkFrame", function() -- Cooldown Handler
+	player.timetravelconsts.starpostNumOld = player.starpostnum
+	player.timetravelconsts.spectatorTimer = 0
+end
+
+timetravel.timeTravelCooldownsHandler = function(player)
 	if timetravel.VERSION > VERSION then return end
-	if not timetravel.isActive then return end
 
-	for player in players.iterate do
-		local pMo = player.mo
-		if pMo and pMo.valid and pMo.timetravel then
-			local pMoTimeTravel = pMo.timetravel
-			pMoTimeTravel.teleportCooldown = $ or 0
-			
-			if pMoTimeTravel.teleportCooldown > 0 then
-				pMoTimeTravel.teleportCooldown = $ - 1
-			
-				if pMoTimeTravel.teleportCooldown == 0 then
-					S_StartSound(nil, sfx_kc50, player)
-					
-					local sfx = sfx_cdpast
-					if pMoTimeTravel.isTimeWarped == true then
-						sfx = sfx_cdfutr
-					end
-					
-					S_StartSound(nil, sfx, player)
-				end
-			end
-		end	
+	local pMo = player.mo
+	if pMo and pMo.valid and pMo.timetravel then
+		local pMoTimeTravel = pMo.timetravel
+		pMoTimeTravel.teleportCooldown = $ or 0
 		
-		if player.timetravelconsts then
-			player.timetravelconsts.TWFlash = $ or 0
-			if player.timetravelconsts.TWFlash > 0 then
-				player.timetravelconsts.TWFlash = $ - 1
+		if pMoTimeTravel.teleportCooldown > 0 then
+			pMoTimeTravel.teleportCooldown = $ - 1
+		
+			if pMoTimeTravel.teleportCooldown == 0 then
+				S_StartSound(nil, sfx_kc50, player)
+				
+				local sfx = sfx_cdpast
+				if pMoTimeTravel.isTimeWarped == true then
+					sfx = sfx_cdfutr
+				end
+				
+				S_StartSound(nil, sfx, player)
 			end
 		end
+	end	
+	
+	if player.timetravelconsts then
+		player.timetravelconsts.TWFlash = $ or 0
+		if player.timetravelconsts.TWFlash > 0 then
+			player.timetravelconsts.TWFlash = $ - 1
+		end
 	end
-
-end)
+end
 
 local thunderShieldBehaviour = function(player, inflictor, source)
 	if timetravel.VERSION > VERSION then return end

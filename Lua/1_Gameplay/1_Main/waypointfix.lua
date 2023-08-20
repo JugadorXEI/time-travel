@@ -143,7 +143,7 @@ local function timeTravelSetPositions()
 	end
 end
 
-addHook("PlayerThink", function(player)
+timetravel.waypointsThinker = function(player)
 	if timetravel.WAYPOINTS_VERSION > WAYPOINTS_VERSION then return end
 	if not timetravel.isActive then return end
 	if leveltime < 3 then return end
@@ -177,7 +177,6 @@ addHook("PlayerThink", function(player)
 			
 		end
 	end
-
 	
 	if player.timetravelconsts.kartPositionDelay then
 		player.timetravelconsts.kartPositionDelay = $ - 1
@@ -185,22 +184,11 @@ addHook("PlayerThink", function(player)
 	pks[k_positiondelay] = player.timetravelconsts.kartPositionDelay or 0
 
 	timetravel.JawzTargettingLogic(player)
-
-	--[[
-	if player == consoleplayer then
-		print(player.name + "'s k_positiondelay: " + player.kartstuff[k_positiondelay])
-		print(player.name + "'s k_position: " + player.kartstuff[k_position])
-		print(player.name + "'s k_nextcheck: " + player.kartstuff[k_nextcheck])
-		print(player.name + "'s k_prevcheck: " + player.kartstuff[k_prevcheck])
-	end
-	]]
-end)
+end
 
 -- This should ideally load after timetravel.lua to avoid a race condition.
-addHook("MapLoad", function(mapnum)
+timetravel.waypointsInit = function()
 	if timetravel.WAYPOINTS_VERSION > WAYPOINTS_VERSION then return end
-	if not timetravel.isActive then return end
-	-- print("waypoints setup...")
 
 	timetravel.presentWaypoints = {}
 	timetravel.futureWaypoints = {}
@@ -225,13 +213,7 @@ addHook("MapLoad", function(mapnum)
 	end
 	
 	timetravel.numstarposts = #starpostsFound
-	
-	--[[
-	print("Present waypoints found: " + #timetravel.presentWaypoints)
-	print("Future waypoints found: " + #timetravel.futureWaypoints)
-	print("Number of starposts: " + timetravel.numstarposts)
-	]]
-end)
+end
 
 addHook("NetVars", function(network)
 	timetravel.presentWaypoints = network(timetravel.presentWaypoints)

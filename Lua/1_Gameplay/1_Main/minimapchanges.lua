@@ -9,13 +9,11 @@ local G_BuildMapName = G_BuildMapName
 local minimapName = "UNKNWN"
 local minimapReverseName = "UNKNWN"
 
-addHook("PostThinkFrame", function()
+timetravel.hudInit = function()
 	if timetravel.HUDCHANGES_VERSION > HUDCHANGES_VERSION then return end
-	if not timetravel.isActive then return end
-	if leveltime == 104 then
-		minimapName = G_BuildMapName().."R"
-		minimapReverseName = G_BuildMapName().."RI"
-	end
+
+	minimapName = G_BuildMapName().."R"
+	minimapReverseName = G_BuildMapName().."RI"
 	
 	if not minimaplib.isMinimapLibActive then return end
 	if consoleplayer == nil then return end
@@ -34,7 +32,7 @@ addHook("PostThinkFrame", function()
 			minimaplib.setMinimapPatchByString(minimapName)
 		end
 	end
-end)
+end
 
 local function headPositionModify(v, mo, moX, moY, flags, scale, patch, colormap)
 	if not timetravel.isActive then return end
@@ -59,7 +57,6 @@ local function headPositionModify(v, mo, moX, moY, flags, scale, patch, colormap
 			end
 		end
 	end
-	
 	
 	return moX, moY, flags, scale, patch, colormap
 end

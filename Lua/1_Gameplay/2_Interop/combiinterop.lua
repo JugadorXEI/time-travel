@@ -12,26 +12,23 @@ local combiCvar = nil
 local hCombiCvar = nil
 
 -- This is so derranged... I have to make compatibility for two of them?
-addHook("ThinkFrame", function()
+timetravel.combiInit = function()
 	if timetravel.COMBIINTEROP_VERSION > COMBIINTEROP_VERSION then return end
-	if not timetravel.isActive then return end
 
 	-- Oh boy. Which is it?
-	if leveltime == 2 then
-		if not combiCvar then combiCvar = CV_FindVar("combi_active") end
-		if not hCombiCvar then hCombiCvar = CV_FindVar("combi_teleportspoof") end
-		
-		if combiCvar and combiCvar.value > 0 then
-			if hCombiCvar then
-				combiInteropType = HAYA
-			else
-				combiInteropType = FICKLE
-			end
+	if not combiCvar then combiCvar = CV_FindVar("combi_active") end
+	if not hCombiCvar then hCombiCvar = CV_FindVar("combi_teleportspoof") end
+	
+	if combiCvar and combiCvar.value > 0 then
+		if hCombiCvar then
+			combiInteropType = HAYA
 		else
-			combiInteropType = NONE
+			combiInteropType = FICKLE
 		end
+	else
+		combiInteropType = NONE
 	end
-end)
+end
 
 addHook("PlayerSpawn", function(player) -- Restore time warp status to mo.
 	if timetravel.COMBIINTEROP_VERSION > COMBIINTEROP_VERSION then return end
