@@ -4,15 +4,19 @@ local VERSION = 1
 local ARROWS_NAMESPACE = "PLAYERARROWS"
 
 if restorePlayerVariables == nil then
-	rawset(_G, "restorePlayerVariables", {
-		JBspy = function()
-			return JUICEBOX and JUICEBOX.value
-		end,
-		FRoverhead = function()
-			local var = CV_FindVar("fr_enabled")
-			return var and var.value
-		end
-	})
+	rawset(_G, "restorePlayerVariables", {})
+end
+
+local function anyVariablesOnApply()
+	local overrideArrow = false
+	
+	for key, func in pairs(restorePlayerVariables) do
+		if not func() then continue end
+		overrideArrow = true
+		break
+	end
+		
+	return overrideArrow
 end
 
 local function xitemHandler()
@@ -26,6 +30,14 @@ local function xitemHandler()
 		xitemHooked = true
 		return
 	end
+	
+	restorePlayerVariables["JBspy"] = function()
+		return JUICEBOX and JUICEBOX.value
+	end
+	restorePlayerVariables["FRoverhead"] = function()
+		local var = CV_FindVar("fr_enabled")
+		return var and var.value
+	end
 
 	lib.addXItemMod(ARROWS_NAMESPACE, "Player Arrows Fix for various mods", 
 	{
@@ -33,6 +45,7 @@ local function xitemHandler()
 		ver = VERSION,
 		-- Fixes XItem stealing the Player Arrow references creating an infinite loop.
 		playerArrowSpawn = function(arrowMo, playerMo)
+			if not anyVariablesOnApply() then return end
 			if G_BattleGametype() then return end
 			local player = playerMo.player
 			if not player then return end
