@@ -70,6 +70,8 @@ end
 
 local positionTable = {}
 local function timeTravelWaypointsProcessing()
+	positionTable = {} -- Reset the table for each execution.
+
 	for player in players.iterate do
 		if not (player and player.valid) then continue end
 		if player.spectator then continue end
@@ -143,7 +145,7 @@ local function timeTravelSetPositions()
 	end
 end
 
-timetravel.waypointsThinker = function(player)
+addHook("PlayerThink", function(player)
 	if timetravel.WAYPOINTS_VERSION > WAYPOINTS_VERSION then return end
 	if not timetravel.isActive then return end
 	if leveltime < 3 then return end
@@ -184,7 +186,7 @@ timetravel.waypointsThinker = function(player)
 	pks[k_positiondelay] = player.timetravelconsts.kartPositionDelay or 0
 
 	timetravel.JawzTargettingLogic(player)
-end
+end)
 
 -- This should ideally load after timetravel.lua to avoid a race condition.
 timetravel.waypointsInit = function()

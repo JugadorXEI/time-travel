@@ -321,10 +321,10 @@ hud.add(function(v, player)
 	if timetravel.HUD_VERSION > HUD_VERSION then return end
 	if not timetravel.isActive then return end
 	if not areHUDfunctionsLocalized then localizeHUDfunctions(v) end
-	if leveltime < 3 then return end
+	if leveltime < 4 then return end
 	
 	if not (#check_patches > 0) then cacheAllPatches() end
-	if leveltime == 3 then
+	if leveltime == 4 then
 		ttd_animDuration = {ttd_animLength, ttd_animLength, ttd_animLength, ttd_animLength}
 		ttd_currentOffset = {
 			{0, 0, FRACUNIT},

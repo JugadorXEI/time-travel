@@ -203,7 +203,7 @@ timetravel.timeTravelInputThinker = function(player)
 			player.timetravelconsts.spectatorTimer = $ + 1
 		end
 		
-		continue
+		return
 	end
 	
 	local leveltime = leveltime
@@ -216,7 +216,7 @@ timetravel.timeTravelInputThinker = function(player)
 	-- Intro teleports:
 	if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then timetravel.teleport(pMo) end
 	-- Don't allow player input until the race starts.
-	if leveltime < starttime then continue end
+	if leveltime < starttime then return end
 	
 	if player.cmd.buttons & BT_ATTACK and not player.timetravelconsts.holdingItemButton then
 		if not timetravel.isInDamageState(player) and not timetravel.canUseItem(player) and 
