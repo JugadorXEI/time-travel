@@ -250,11 +250,12 @@ timetravel.echoIdleSounds = {
 				
 				if not foundmobj.timetravel then return nil end
 				if foundmobj.type ~= MT_PLAYER then return end
-				timetravel.teleport(foundmobj)
+				-- timetravel.teleport(foundmobj) -- This was actually a stupid idea, wasn't it...?
+				linkedItem.state = linkedItem.info.deathstate -- Blow the mine up.
 				
 				-- Incoming explosion...
 				P_SpawnMobj(mobj.x, mobj.y, mobj.z, MT_MINEEXPLOSIONSOUND)
-				
+				K_SpawnMineExplosion(mobj)
 			end, mobj, mobj.x - explodedist, mobj.x + explodedist, mobj.y - explodedist, mobj.y + explodedist)
 		end
 	end,

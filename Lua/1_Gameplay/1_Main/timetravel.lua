@@ -72,6 +72,21 @@ timetravel.determineTimeWarpPosition = function(mo)
 	return xOffset, yOffset
 end
 
+timetravel.determineTimeWarpPositionBoolean = function(booleanStatus)
+	local xOffset = 0
+	local yOffset = 0
+
+	if booleanStatus then
+		xOffset = $ - timetravel.localXdist
+		yOffset = $ - timetravel.localYdist
+	else
+		xOffset = $ + timetravel.localXdist
+		yOffset = $ + timetravel.localYdist
+	end
+
+	return xOffset, yOffset
+end
+
 timetravel.changePositions = function(mo, dontrunextralogic)
 	local xOffset, yOffset = timetravel.determineTimeWarpPosition(mo)
 	local finalX = mo.x + xOffset

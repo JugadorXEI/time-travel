@@ -95,6 +95,24 @@ timetravel.echoes_SpawnHandler = function(mobj)
 	if player == nil or player.mo.timetravel == nil then return end
 	
 	local xOffset, yOffset = timetravel.determineTimeWarpPosition(player.mo)
+	local timeTravelStatus = player.mo.timetravel.isTimeWarped
+	
+	if mobj.type == MT_MINEEXPLOSION then
+		--[[
+			Fucked up, evil and slow hack.
+			Explosion hitbox objects don't have a reference to the mine. It'll grab the player reference,
+			but it'll discern the completely wrong time travel and offset if the mine and player are in different timelines.
+			So in order to know if it's the correct timeline, we need to discern if the distance between the hitbox and the player
+			is bigger than the set time travel offset.
+		]]
+		local dist = FixedHypot(player.mo.x - mobj.x, player.mo.y - mobj.y)
+		local offsetDist = FixedHypot(timetravel.localXdist, timetravel.localYdist)
+		
+		if dist >= offsetDist then
+			timeTravelStatus = not timeTravelStatus
+			xOffset, yOffset = timetravel.determineTimeWarpPositionBoolean(timeTravelStatus)
+		end
+	end
 	
 	local echoItem = timetravel.SpawnEchoMobj(mobj)
 	P_SetOrigin(echoItem, mobj.x + xOffset, mobj.y + yOffset, mobj.z)
@@ -102,8 +120,8 @@ timetravel.echoes_SpawnHandler = function(mobj)
 	if mobj.timetravel == nil and mobj.type ~= MT_PLAYER then mobj.timetravel = {} end
 	echoItem.timetravel = {}
 	
-	mobj.timetravel.isTimeWarped 		= player.mo.timetravel.isTimeWarped
-	echoItem.timetravel.isTimeWarped 	= not player.mo.timetravel.isTimeWarped
+	mobj.timetravel.isTimeWarped 		= timeTravelStatus
+	echoItem.timetravel.isTimeWarped 	= not timeTravelStatus
 	
 	mobj.timetravel.touchEchoCD = 0
 	
