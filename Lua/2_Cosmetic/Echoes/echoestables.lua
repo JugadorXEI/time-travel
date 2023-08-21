@@ -122,6 +122,7 @@ timetravel.typesToEcho = {
 timetravel.additionalHittables = {
 	[MT_SPBEXPLOSION] = true,
 	[MT_MINEEXPLOSION] = true,
+	[MT_SPB] = true,
 }
 
 timetravel.optimizedExplosion = function(mobj)
