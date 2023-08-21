@@ -16,6 +16,8 @@ addHook("PreThinkFrame", function()
 			timetravel.dynMusThinker()
 		end
 	end
+	
+	timetravel.hudMinimapThinker()
 end)
 
 -- Everything that inits on start is here.

@@ -14,7 +14,11 @@ timetravel.hudInit = function()
 
 	minimapName = G_BuildMapName().."R"
 	minimapReverseName = G_BuildMapName().."RI"
-	
+end
+
+timetravel.hudMinimapThinker = function()
+	if timetravel.HUDCHANGES_VERSION > HUDCHANGES_VERSION then return end
+
 	if not minimaplib.isMinimapLibActive then return end
 	if consoleplayer == nil then return end
 	
