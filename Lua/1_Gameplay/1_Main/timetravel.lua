@@ -103,13 +103,14 @@ timetravel.changePositions = function(mo, dontrunextralogic)
 				
 				if mo.player then S_StopMusic(mo.player) end
 			else
+				local hNext = mo.hnext -- Get orbital reference before we delete the mobj.
+			
 				S_StartSound(mo, sfx_ttfrag)
 				if mo.linkedItem then S_StartSound(mo.linkedItem, sfx_ttfrag) end
 				P_KillMobj(mo) -- DEATH.
 				
 				-- Destroy everything in the hnext chain.
 				-- (Orbinals, 'nanas, Rocket Sneakers)
-				local hNext = mo.hnext
 				while hNext and hNext.valid do
 					P_RemoveMobj(hNext)
 					hNext = mo.hnext
