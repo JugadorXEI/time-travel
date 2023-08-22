@@ -92,7 +92,7 @@ timetravel.echoes_SpawnHandler = function(mobj)
 	if tracerPlayer ~= nil then tracerPlayer = $.player end
 
 	local player = (mobj.player or targetPlayer) or tracerPlayer
-	if player == nil or player.mo.timetravel == nil then return end
+	if player == nil or player.mo == nil or player.mo.timetravel == nil then return end
 	
 	local xOffset, yOffset = timetravel.determineTimeWarpPosition(player.mo)
 	local timeTravelStatus = player.mo.timetravel.isTimeWarped
