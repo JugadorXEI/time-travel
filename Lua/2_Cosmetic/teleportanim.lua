@@ -34,6 +34,8 @@ local P_MoveOrigin = P_MoveOrigin
 local P_ReturnThrustX = P_ReturnThrustX
 local P_ReturnThrustY = P_ReturnThrustY
 
+local noDrawDist = 6144<<FRACBITS
+
 freeslot("SPR_TTSP", "S_TT_SPARKLE", "MT_TT_SPARKLEOVERLAY")
 
 local animOrder = { A, B, C, B }
@@ -164,6 +166,30 @@ end, MT_TT_SPARKLEOVERLAY)
 
 timetravel.createSparkles = function(mo)
 	if mo.type ~= MT_PLAYER then return end
+	
+	-- Only execute this for non-display players.
+	if timetravel.isDisplayPlayer(mo.player) == -1 then
+	
+		local localPlayerDist = nil
+		for i = 0, 3 do
+			local player = displayplayers[i]
+			if player ~= nil and player.mo and player.mo.valid then
+				local xOffset, yOffset = 0, 0
+				if player.mo.timetravel.isTimeWarped ~= mo.timetravel.isTimeWarped then
+					xOffset, yOffset = timetravel.determineTimeWarpPosition(mo)
+				end
+			
+				local thisDist = FixedHypot((player.mo.x - xOffset) - mo.x, (player.mo.y - yOffset) - mo.y)
+				localPlayerDist = min($ or INT32_MAX, thisDist)
+				-- print("Last dist stored: " + localPlayerDist)
+			else break
+			end
+		end
+		
+		if localPlayerDist ~= nil and localPlayerDist > noDrawDist then
+			return -- Don't draw this animation if the player is too far away from local players to be seen.
+		end
+	end
 	
 	local sparkleOverlay = P_SpawnMobj(mo.x, mo.y, mo.z, MT_TT_SPARKLEOVERLAY)
 	sparkleOverlay.target = mo
