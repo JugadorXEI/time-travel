@@ -17,6 +17,13 @@ addHook("PreThinkFrame", function()
 	timetravel.hudMinimapThinker()
 end)
 
+-- This needs to happen later.
+addHook("ThinkFrame", function()
+	for player in players.iterate do
+		timetravel.timeTravelStarpostHandler(player)
+	end
+end)
+
 -- Everything that inits on start is here.
 addHook("MapLoad", function()
 	if timetravel.MAINTHINKER_VERSION > MAINTHINKER_VERSION then return end

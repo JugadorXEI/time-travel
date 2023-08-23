@@ -209,16 +209,6 @@ timetravel.timeTravelInputThinker = function(player)
 	
 	local pMo = player.mo
 	if not (pMo and pMo.valid and not player.spectator) then
-		player.timetravelconsts = $ or {}
-		player.timetravelconsts.spectatorTimer = $ or 0
-		
-		if player.timetravelconsts.spectatorTimer >= TICRATE then
-			player.timetravelconsts.starpostStatus = false
-			player.timetravelconsts.starpostNumOld = 0
-		else
-			player.timetravelconsts.spectatorTimer = $ + 1
-		end
-		
 		return
 	end
 	
@@ -249,7 +239,24 @@ timetravel.timeTravelInputThinker = function(player)
 	elseif not (player.cmd.buttons & BT_ATTACK) and player.timetravelconsts.holdingItemButton then
 		player.timetravelconsts.holdingItemButton = false
 	end
+end
+
+timetravel.timeTravelStarpostHandler = function(player)
+	if not player.timetravelconsts then return end
+
+	if player.spectator then
+		player.timetravelconsts.spectatorTimer = $ or 0
 	
+		if player.timetravelconsts.spectatorTimer >= TICRATE then
+			player.timetravelconsts.starpostStatus = false
+			player.timetravelconsts.starpostNumOld = 0
+		else
+			player.timetravelconsts.spectatorTimer = $ + 1
+		end
+		
+		return
+	end
+
 	-- Checkpoint Nums:		
 	if player.starpostnum ~= player.timetravelconsts.starpostNumOld then
 		if player.starpostnum == 0 then
