@@ -11,12 +11,9 @@ addHook("PreThinkFrame", function()
 	for player in players.iterate do
 		timetravel.timeTravelCooldownsHandler(player)
 		timetravel.timeTravelInputThinker(player)
-		
-		if player == displayplayer then
-			timetravel.dynMusThinker()
-		end
 	end
 	
+	timetravel.dynMusThinker()
 	timetravel.hudMinimapThinker()
 end)
 
