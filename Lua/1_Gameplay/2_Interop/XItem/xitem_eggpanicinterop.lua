@@ -21,7 +21,7 @@ local function xitemHandler()
 	local lib = xItemLib.func
 	local modData = xItemLib.xItemCrossData.modData
 	
-	if modData[EGGPANIC_NAMESPACE] and modData[EGGPANIC_NAMESPACE].defDat.ver <= VERSION then 
+	if modData[EGGPANIC_NAMESPACE] and modData[EGGPANIC_NAMESPACE].defDat.ver > VERSION then 
 		-- Exit early, don't attempt to add this again.
 		xitemHooked = true
 		return

@@ -14,7 +14,7 @@ local function xitemHandler()
 	local lib = xItemLib.func
 	local modData = xItemLib.xItemCrossData.modData
 	
-	if modData[JB_NAMESPACE] and modData[JB_NAMESPACE].defDat.ver <= VERSION then 
+	if modData[JB_NAMESPACE] and modData[JB_NAMESPACE].defDat.ver > VERSION then 
 		-- Exit early, don't attempt to add this again.
 		xitemHooked = true
 		return
@@ -26,8 +26,7 @@ local function xitemHandler()
 		ver = VERSION,
 	})
 	
-	-- This NEEDS to have a function BECAUSE OTHERWISE HOOKS WON'T WORK
-	-- I SPENT FOUR HOURS AND THIRTY MINUTES TRYING TO FIGURE THIS OUT
+	-- This NEEDS to have a function, otherwise the getfunc hook for this doesn't work.
 	local tripleSneakersFunc = lib.getItemDataById(KRITEM_TRIPLESNEAKER)["getfunc"]
 	if not tripleSneakersFunc then lib.getItemDataById(KRITEM_TRIPLESNEAKER)["getfunc"] = function(p, getitem) end end
 	

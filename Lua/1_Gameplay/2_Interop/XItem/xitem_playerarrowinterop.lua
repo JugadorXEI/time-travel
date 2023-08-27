@@ -1,6 +1,12 @@
+-- Optimization.
+local G_BattleGametype = G_BattleGametype
+local P_SpawnMobj = P_SpawnMobj
+local pairs = pairs
+-- No more.
+
 local xitemHooked = false
 
-local VERSION = 1
+local VERSION = 2
 local ARROWS_NAMESPACE = "PLAYERARROWS"
 
 if restorePlayerVariables == nil then
@@ -25,7 +31,7 @@ local function xitemHandler()
 	local lib = xItemLib.func
 	local modData = xItemLib.xItemCrossData.modData
 	
-	if modData[ARROWS_NAMESPACE] and modData[ARROWS_NAMESPACE].defDat.ver <= VERSION then 
+	if modData[ARROWS_NAMESPACE] and modData[ARROWS_NAMESPACE].defDat.ver > VERSION then 
 		-- Exit early, don't attempt to add this again.
 		xitemHooked = true
 		return
@@ -64,8 +70,8 @@ local function xitemHandler()
 				player[key] = f
 			end
 			
-			-- P_KillMobj(arrowMo) -- Let the hook handle this.
-			-- This results in two MT_XITEMPLAYERARROWs being created but fuck it we ball.
+			-- This results in two MT_XITEMPLAYERARROWs being created,
+			-- but for the one we create at least the references are preserved.
 			return true
 		end
 	})

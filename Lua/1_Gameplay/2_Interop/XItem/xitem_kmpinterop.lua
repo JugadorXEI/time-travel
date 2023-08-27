@@ -16,7 +16,7 @@ local max = max
 
 local xitemHooked = false
 
-local VERSION = 1
+local VERSION = 2
 local KMP_NAMESPACE = "KARTMP"
 
 -- Hooray for reusability, right?
@@ -42,8 +42,9 @@ local function xitemHandler()
 	if not (xItemLib and xItemLib.func) then return end
 	local lib = xItemLib.func
 	local modData = xItemLib.xItemCrossData.modData
-	
-	if modData[KMP_NAMESPACE] and modData[KMP_NAMESPACE].defDat.ver <= VERSION then 
+
+	local didItExistBefore = modData[KMP_NAMESPACE] ~= nil
+	if modData[KMP_NAMESPACE] and modData[KMP_NAMESPACE].defDat.ver > VERSION then 
 		-- Exit early, don't attempt to add this again.
 		xitemHooked = true
 		return
@@ -88,27 +89,13 @@ local function xitemHandler()
 					end
 				end
 			end
-		end
+		end,
 	})
-	
-	-- These NEED to have a function BECAUSE OTHERWISE HOOKS WON'T WORK
-	-- I SPENT FOUR HOURS AND THIRTY MINUTES TRYING TO FIGURE THIS OUT
-	local decabananaFunc 	= lib.getItemDataById(KRITEM_TENFOLDBANANA)["getfunc"]
-	local quadorbFunc 		= lib.getItemDataById(KRITEM_QUADORBINAUT)["getfunc"]
-	local tripleorbtFunc 	= lib.getItemDataById(KRITEM_TRIPLEORBINAUT)["getfunc"]
-	local dualjawzFunc		= lib.getItemDataById(KRITEM_DUALJAWZ)["getfunc"]
-	if not decabananaFunc 	then lib.getItemDataById(KRITEM_TENFOLDBANANA)["getfunc"] = function(p, getitem) end end
-	if not quadorbFunc 		then lib.getItemDataById(KRITEM_QUADORBINAUT)["getfunc"] = function(p, getitem) end end
-	if not tripleorbtFunc 	then lib.getItemDataById(KRITEM_TRIPLEORBINAUT)["getfunc"] = function(p, getitem) end end
-	if not dualjawzFunc 	then lib.getItemDataById(KRITEM_DUALJAWZ)["getfunc"] = function(p, getitem) end end
-	
-	addHook("MobjThinker", function(mo)
+
+	modData[KMP_NAMESPACE].xItemFuse = function(mo)
 		if not (mo and mo.valid) then return end
 		if not (kmp_floatingitemfuse and kmp_floatingitemfuse.value) then return end
-		-- I don't make an xitem check here because it would be paradoxical,
-		-- you can't have MT_FLOATINGXITEM without xItem.
-		local modData = xItemLib.xItemCrossData.modData
-		if modData[KMP_NAMESPACE] and modData[KMP_NAMESPACE].defDat.ver > VERSION then return end
+		if modData[KMP_NAMESPACE].defDat.ver > VERSION then return end
 		
 		if P_IsObjectOnGround(mo) and not mo.fuse then
 			local numlaps = mapheaderinfo[gamemap].numlaps
@@ -118,8 +105,23 @@ local function xitemHandler()
 		if mo.fuse then
 			mo.flags2 = (mo.fuse <= 5*TICRATE and leveltime % 2) and $ + MF2_DONTDRAW or $ & ~(MF2_DONTDRAW)
 		end
-	end, MT_FLOATINGXITEM)
+	end
 
+	-- These NEED to have a function. Otherwise overriding the amounts doesn't work.
+	local decabananaFunc 	= lib.getItemDataById(KRITEM_TENFOLDBANANA)["getfunc"]
+	local quadorbFunc 		= lib.getItemDataById(KRITEM_QUADORBINAUT)["getfunc"]
+	local tripleorbtFunc 	= lib.getItemDataById(KRITEM_TRIPLEORBINAUT)["getfunc"]
+	local dualjawzFunc		= lib.getItemDataById(KRITEM_DUALJAWZ)["getfunc"]
+	if not decabananaFunc 	then lib.getItemDataById(KRITEM_TENFOLDBANANA)["getfunc"] = function(p, getitem) end end
+	if not quadorbFunc 		then lib.getItemDataById(KRITEM_QUADORBINAUT)["getfunc"] = function(p, getitem) end end
+	if not tripleorbtFunc 	then lib.getItemDataById(KRITEM_TRIPLEORBINAUT)["getfunc"] = function(p, getitem) end end
+	if not dualjawzFunc 	then lib.getItemDataById(KRITEM_DUALJAWZ)["getfunc"] = function(p, getitem) end end
+	
+	-- Don't hook this again if it was already hooked.
+	if not didItExistBefore then
+		addHook("MobjThinker", function(mo) modData[KMP_NAMESPACE].xItemFuse(mo) end, MT_FLOATINGXITEM)
+	end 
+	
 	xitemHooked = true
 end
 
