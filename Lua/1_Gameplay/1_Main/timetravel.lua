@@ -220,13 +220,14 @@ timetravel.timeTravelInputThinker = function(player)
 	end
 	
 	-- Intro teleports:
-	if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then timetravel.teleport(pMo) end
+	if timetravel.canPlayerTimeTravel(player) then
+		if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then timetravel.teleport(pMo) end
+	end
 	-- Don't allow player input until the race starts.
 	if leveltime < starttime then return end
 	
 	if player.cmd.buttons & BT_ATTACK and not player.timetravelconsts.holdingItemButton then
-		if not timetravel.isInDamageState(player) and not timetravel.canUseItem(player) and 
-			(pMo.timetravel.teleportCooldown == nil or pMo.timetravel.teleportCooldown <= 0) then
+		if timetravel.canPlayerTimeTravel(player) then
 			timetravel.teleport(pMo)
 		elseif not timetravel.isInDamageState(player) and timetravel.canUseItem(player) and
 			player.kartstuff[k_respawn] == 0 and player.kartstuff[k_itemtype] == KITEM_THUNDERSHIELD then

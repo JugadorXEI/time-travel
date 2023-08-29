@@ -167,6 +167,12 @@ timetravel.getNormalizedVectors = function(x, y)
 	return {xNormal, yNormal}
 end
 
+timetravel.canPlayerTimeTravel = function(player)
+	local pMo = player.mo
+	return not timetravel.isInDamageState(player) and not timetravel.canUseItem(player) and 
+		(pMo.timetravel.teleportCooldown == nil or pMo.timetravel.teleportCooldown <= 0)
+end
+
 timetravel.GENERAL_VERSION = GENERAL_VERSION
 
 end
