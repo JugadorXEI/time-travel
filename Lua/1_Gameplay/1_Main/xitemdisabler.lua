@@ -82,7 +82,7 @@ local function xitemEnablerHandler()
 	if timetravel.isActive then enableXItem() else disableXItem() end
 end
 
-addHook("MapLoad", xitemEnablerHandler)
+addHook("MapChange", xitemEnablerHandler)
 addHook("NetVars", xitemEnablerHandler)
 
 timetravel.XITEMDISABLER_VERSION = XITEMDISABLER_VERSION
