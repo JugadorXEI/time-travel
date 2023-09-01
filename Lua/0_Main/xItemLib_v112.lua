@@ -663,7 +663,17 @@ local function floatingXItemSpecial(s, t)
 	if (G_BattleGametype() and kartstuff[k_bumper] <= 0)
 		return true
 	end
-	--print("a")
+
+	-- Issue #12
+	-- Only kick in if floating item spawner is loaded + item is from spawner.
+	-- The bug we're trying to fix is from pickup limiting, don't run this if not the case.
+	if floatingitemspawner and s.spawnedbyspawner and s.limitpickup then
+		-- Don't run the collision hook if we'd be picking more than we have.
+		if kartstuff[k_itemamount] >= s.movecount then return true end
+		-- Adjust to get the desired amount from the limited amount of pickups.
+		s.movecount = $ - kartstuff[k_itemamount]
+	end
+
 	kartstuff[k_itemtype] = s.threshold
 	kartstuff[k_itemamount] = $ + s.movecount
 
@@ -735,13 +745,13 @@ end
 
 --thanks yoshimo for porting all this stuff over
 local function playerArrowUnsetPositionThinking(mobj, scale)
-	P_SetOrigin(mobj, mobj.target.x, mobj.target.y, mobj.target.z)
+	P_MoveOrigin(mobj, mobj.target.x, mobj.target.y, mobj.target.z + mobj.height + 16*FRACUNIT)
 	
     mobj.angle = R_PointToAngle(mobj.x, mobj.y) + ANGLE_90 -- literally only happened because i wanted to ^L^R the SPR_ITEM's
 
     if not splitscreen and displayplayers[0].mo then
-        scale = mobj.target.scale + FixedMul(FixedDiv(abs(P_AproxDistance(displayplayers[0].mo.x-mobj.target.x,
-            displayplayers[0].mo.y-mobj.target.y)), RING_DIST), mobj.target.scale)
+        scale = mobj.target.scale + FixedMul(FixedDiv(abs(R_PointToDist2(displayplayers[0].mo.x, displayplayers[0].mo.y, 
+		mobj.target.x, mobj.target.y)), RING_DIST), mobj.target.scale)
         if scale > 16*mobj.target.scale then
             scale = 16*mobj.target.scale
         end
@@ -786,7 +796,7 @@ local function playerArrowThinker(mobj)
     if mobj and mobj.valid and mobj.target and mobj.target.health
         and mobj.target.player and not mobj.target.player.spectator
         and mobj.target.player.health and mobj.target.player.playerstate ~= PST_DEAD
-        --[[and displayplayers[0].mo and not displayplayers[0].spectator]]
+        -- and displayplayers[0].mo and not displayplayers[0].spectator
     then
 		local mtrace = mobj.tracer
 		local tm = mobj.target
@@ -1806,19 +1816,22 @@ local colormode = TC_RAINBOW
 local localcolor = SKINCOLOR_NONE
 
 local function xItem_FindHudFlags(v, p, c)
-	if splitscreen < 2 then -- don't change shit for THIS splitscreen.
-		if c.pnum == 1 then
-			return ITEM_X, ITEM_Y, V_SNAPTOTOP|V_SNAPTOLEFT, false
-		else
-			return ITEM_X, ITEM_Y, V_SNAPTOLEFT|V_SPLITSCREEN, false
-		end
-	else -- now we're having a fun game.
-		if c.pnum == 1 or c.pnum == 3 then -- If we are P1 or P3...
-			return ITEM1_X, ITEM1_Y, (c.pnum == 3 and V_SPLITSCREEN or V_SNAPTOTOP)|V_SNAPTOLEFT, false	-- flip P3 to the bottom.	
-		else -- else, that means we're P2 or P4.
-			return ITEM2_X, ITEM2_Y, (c.pnum == 4 and V_SPLITSCREEN or V_SNAPTOTOP)|V_SNAPTORIGHT, true
-		end
-	end
+    if splitscreen < 2 then -- don't change shit for THIS splitscreen.
+        local ITEM_Y_OFF = ITEM_Y
+        if splitscreen == 1 then ITEM_Y_OFF = 3 end -- Apply insignificantly small offset for 2P splitscreen.
+        
+        if c.pnum == 1 then
+            return ITEM_X, ITEM_Y_OFF, V_SNAPTOTOP|V_SNAPTOLEFT, false
+        else
+            return ITEM_X, ITEM_Y_OFF, V_SNAPTOLEFT|V_SPLITSCREEN, false
+        end
+    else -- now we're having a fun game.
+        if c.pnum == 1 or c.pnum == 3 then -- If we are P1 or P3...
+            return ITEM1_X, ITEM1_Y, (c.pnum == 3 and V_SPLITSCREEN or V_SNAPTOTOP)|V_SNAPTOLEFT, false    -- flip P3 to the bottom.    
+        else -- else, that means we're P2 or P4.
+            return ITEM2_X, ITEM2_Y, (c.pnum == 4 and V_SPLITSCREEN or V_SNAPTOTOP)|V_SNAPTORIGHT, true
+        end
+    end
 end
 
 local function xItem_DrawItemBox(v, p, c, fill)
@@ -2168,6 +2181,7 @@ local function findAvailableRoulettePatches(p, useodds, spbrush)
 	return available
 end
 
+local leveltimeEven = 0
 local function xItem_hudMain(v, p, c)
 	if not p then return end
 	if not p.xItemData then return end
@@ -2222,6 +2236,33 @@ local function xItem_hudMain(v, p, c)
 			--draw the roulette
 			elseif dat.xItem_roulette then
 				local av = availableItems[p.splitscreenindex + 1]
+
+				if leveltimeEven != leveltime % 2 and not (av and table.maxn(av)) then
+					local pingame = 0
+					local useodds = 0
+					local dontforcespb = false
+					local spbrush = false
+
+					for p in players.iterate do
+						if p.spectator then continue end
+						pingame = $+1
+						if (p.exiting) then
+							dontforcespb = true
+						end
+					end
+					if (pingame <= 2)
+						dontforcespb = true
+					end
+
+					if (G_RaceGametype())
+						spbrush = (spbplace ~= -1 and kartstuff[k_position] == spbplace+1)
+					end
+
+					useodds = libfn.findUseOdds(p, 0, pingame, spbrush, dontforcespb)
+					av = libfn.hudFindRouletteItems(p, useodds, 0, spbrush)
+					leveltimeEven = leveltime % 2
+				end
+
 				--print(splitnum(p))
 				if av and table.maxn(av) then
 					libfn.hudDrawItem(v, p, c, av[((leveltime/3) % table.maxn(av)) + 1])
