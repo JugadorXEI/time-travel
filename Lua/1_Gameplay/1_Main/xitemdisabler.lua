@@ -36,7 +36,6 @@ local function storeReferences()
 	defXitem_playerArrowThinker = xItemLib.func.playerArrowThinker
 	defXitem_vanillaArrowThinker = xItemLib.func.vanillaArrowThinker
 	defXitem_hudMain = xItemLib.func.hudMain
-
 	obtainedReferences = true
 end
 
@@ -69,7 +68,7 @@ local function disableXItem()
 	usingXItem = false
 end
 
-local function xitemEnablerHandler()
+timetravel.xitemEnablerHandler = function()
 	if timetravel.XITEMDISABLER_VERSION > XITEMDISABLER_VERSION then return end
 	if not (xItemLib and xItemLib.func) then return end
 	if not obtainedReferences then storeReferences() end
@@ -82,8 +81,18 @@ local function xitemEnablerHandler()
 	if timetravel.isActive then enableXItem() else disableXItem() end
 end
 
-addHook("MapChange", xitemEnablerHandler)
-addHook("NetVars", xitemEnablerHandler)
+timetravel.xitemRestoreItemsToDefaults = function(mobj)
+	if timetravel.XITEMDISABLER_VERSION > XITEMDISABLER_VERSION then return end
+	if not (xItemLib and xItemLib.func) then return end
+	if usingXItem then return end
+	if not floatingitemspawner then return end
+	
+	if mobj.spawnedbyspawner then mobj.type = MT_FLOATINGITEM end
+end
+
+addHook("MobjThinker", function(mo) timetravel.xitemRestoreItemsToDefaults(mo) end, MT_FLOATINGXITEM)
+addHook("MapChange", function() timetravel.xitemEnablerHandler() end)
+addHook("NetVars", function() timetravel.xitemEnablerHandler() end)
 
 timetravel.XITEMDISABLER_VERSION = XITEMDISABLER_VERSION
 
