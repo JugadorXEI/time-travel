@@ -19,6 +19,9 @@ end)
 
 -- This needs to happen later.
 addHook("ThinkFrame", function()
+	if timetravel.MAINTHINKER_VERSION > MAINTHINKER_VERSION then return end
+	if not timetravel.isActive then return end
+
 	for player in players.iterate do
 		timetravel.timeTravelStarpostHandler(player)
 	end

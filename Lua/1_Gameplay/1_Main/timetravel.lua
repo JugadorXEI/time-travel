@@ -243,6 +243,7 @@ timetravel.timeTravelInputThinker = function(player)
 end
 
 timetravel.timeTravelStarpostHandler = function(player)
+	if timetravel.VERSION > VERSION then return end
 	if not player.timetravelconsts then return end
 
 	if player.spectator then
