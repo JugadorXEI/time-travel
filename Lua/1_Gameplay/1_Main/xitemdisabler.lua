@@ -87,7 +87,8 @@ timetravel.xitemRestoreItemsToDefaults = function(mobj)
 	if usingXItem then return end
 	if not floatingitemspawner then return end
 	
-	if mobj.spawnedbyspawner then mobj.type = MT_FLOATINGITEM end
+	-- Lua hot potato
+	if mobj and mobj.valid and mobj.spawnedbyspawner then mobj.type = MT_FLOATINGITEM end
 end
 
 addHook("MobjThinker", function(mo) timetravel.xitemRestoreItemsToDefaults(mo) end, MT_FLOATINGXITEM)
