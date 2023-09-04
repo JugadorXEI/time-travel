@@ -149,7 +149,14 @@ timetravel.teleport = function(mo, dontrunhooks)
 	end
 	
 	timetravel.changePositions(mo)
-	S_StartSound(mo, sfx_ttshif)
+	
+	local volume = 255
+	-- Don't make the intro teleports exceedingly loud.
+	if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then
+		volume = $ / (timetravel.getActivePlayerCount() or 1) -- Make sure we do not divide by zero, that'd be BAD.
+	end
+	
+	S_StartSoundAtVolume(mo, sfx_ttshif, volume)
 	
 	-- Stuff in the mo's hnext list will also time travel.
 	local moHnext = mo.hnext

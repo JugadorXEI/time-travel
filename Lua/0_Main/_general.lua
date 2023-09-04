@@ -173,6 +173,16 @@ timetravel.canPlayerTimeTravel = function(player)
 		(pMo.timetravel.teleportCooldown == nil or pMo.timetravel.teleportCooldown <= 0)
 end
 
+timetravel.getActivePlayerCount = function()
+	local playerCount = 0
+	for player in players.iterate do
+		if player and player.valid and player.mo and player.mo.valid and not player.spectate then
+			playerCount = $ + 1
+		end
+	end
+	return playerCount
+end
+
 timetravel.GENERAL_VERSION = GENERAL_VERSION
 
 end
