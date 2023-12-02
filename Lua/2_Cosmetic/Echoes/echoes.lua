@@ -242,14 +242,14 @@ timetravel.echoes_Thinker = function(mobj)
 	if linkedItem.type == MT_PLAYER then
 		mobj.skin = linkedItem.skin
 		mobj.color = linkedItem.color
-		mobj.sprite = linkedItem.sprite
-		mobj.scale = linkedItem.scale
-		mobj.destscale = linkedItem.destscale
 		mobj.height = linkedItem.height
 		mobj.radius = linkedItem.radius
 		mobj.flags2 = linkedItem.flags2
 	end
 	
+	mobj.sprite = linkedItem.sprite
+	mobj.scale = linkedItem.scale
+	mobj.destscale = linkedItem.destscale
 	mobj.colorized = true
 	
 	if linkedItem.type == MT_PLAYER then
