@@ -130,7 +130,7 @@ timetravel.additionalHittables = {
 timetravel.optimizedExplosion = function(mobj)
 	-- Absolutely remove anything that's going up or down.
 	local momz = abs(mobj.momz)
-	if momz > 4<<FRACBITS then
+	if momz > 2<<FRACBITS then
 		P_RemoveMobj(mobj)
 		return true
 	end

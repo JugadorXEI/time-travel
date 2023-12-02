@@ -5,7 +5,7 @@ if timetravel.XITEMDISABLER_VERSION == nil or timetravel.XITEMDISABLER_VERSION <
 
 rawset(_G, "chronoshift_xitem_alwayson", CV_RegisterVar({
 	name = "chronoshift_xitem_alwayson",
-	defaultvalue = "Off",
+	defaultvalue = timetravel.defaultXItemEnabledValue,
 	flags = CV_NETVAR,
 	PossibleValue = CV_OnOff,
 }))
