@@ -1,4 +1,4 @@
-local KMPINTEROP_VERSION = 1
+local KMPINTEROP_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.KMPINTEROP_VERSION == nil or timetravel.KMPINTEROP_VERSION < KMPINTEROP_VERSION then

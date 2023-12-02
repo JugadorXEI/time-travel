@@ -1,4 +1,4 @@
-local VERSION = 1
+local VERSION = 10
 
 if minimaplib == nil then
 	rawset(_G, "minimaplib", {})

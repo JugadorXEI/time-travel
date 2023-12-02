@@ -1,4 +1,4 @@
-local SKIES_VERSION = 1
+local SKIES_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.SKIES_VERSION == nil or timetravel.SKIES_VERSION < SKIES_VERSION then

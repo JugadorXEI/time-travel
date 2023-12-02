@@ -1,4 +1,4 @@
-local GENERAL_VERSION = 1
+local GENERAL_VERSION = 10
 
 if timetravel == nil then
 	rawset(_G, "timetravel", {})

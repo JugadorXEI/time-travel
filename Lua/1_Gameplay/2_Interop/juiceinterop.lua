@@ -1,4 +1,4 @@
-local JUICEINTEROP_VERSION = 1
+local JUICEINTEROP_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.JUICEINTEROP_VERSION == nil or timetravel.JUICEINTEROP_VERSION < JUICEINTEROP_VERSION then

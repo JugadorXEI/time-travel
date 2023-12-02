@@ -1,4 +1,4 @@
-local XITEMDISABLER_VERSION = 1
+local XITEMDISABLER_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.XITEMDISABLER_VERSION == nil or timetravel.XITEMDISABLER_VERSION < XITEMDISABLER_VERSION then

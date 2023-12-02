@@ -1,4 +1,4 @@
-local COMBIINTEROP_VERSION = 1
+local COMBIINTEROP_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.COMBIINTEROP_VERSION == nil or timetravel.COMBIINTEROP_VERSION < COMBIINTEROP_VERSION then

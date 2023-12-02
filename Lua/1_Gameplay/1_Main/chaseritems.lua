@@ -1,5 +1,5 @@
 -- You are the Chaser! Bring it!
-local CHASER_VERSION = 2
+local CHASER_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.CHASER_VERSION == nil or timetravel.CHASER_VERSION < CHASER_VERSION then

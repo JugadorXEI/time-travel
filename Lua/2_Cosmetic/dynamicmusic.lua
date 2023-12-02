@@ -1,4 +1,4 @@
-local DYNMUS_VERSION = 1
+local DYNMUS_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.DYNMUS_VERSION == nil or timetravel.DYNMUS_VERSION < DYNMUS_VERSION then

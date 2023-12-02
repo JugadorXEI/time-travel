@@ -1,4 +1,4 @@
-local HUDCHANGES_VERSION = 1
+local HUDCHANGES_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.HUDCHANGES_VERSION == nil or timetravel.HUDCHANGES_VERSION < HUDCHANGES_VERSION then

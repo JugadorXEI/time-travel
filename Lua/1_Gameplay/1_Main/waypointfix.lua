@@ -1,4 +1,4 @@
-local WAYPOINTS_VERSION = 1
+local WAYPOINTS_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.WAYPOINTS_VERSION == nil or timetravel.WAYPOINTS_VERSION < WAYPOINTS_VERSION then

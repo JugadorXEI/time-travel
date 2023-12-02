@@ -1,4 +1,4 @@
-local TPANIM_VERSION = 1
+local TPANIM_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.TPANIM_VERSION == nil or timetravel.TPANIM_VERSION < TPANIM_VERSION then

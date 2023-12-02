@@ -1,4 +1,4 @@
-local ECHOES_VERSION = 1
+local ECHOES_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_VERSION == nil or timetravel.ECHOES_VERSION < ECHOES_VERSION then

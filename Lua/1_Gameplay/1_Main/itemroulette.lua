@@ -1,4 +1,4 @@
-local ROULETTE_VERSION = 2
+local ROULETTE_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.ROULETTE_VERSION == nil or timetravel.ROULETTE_VERSION < ROULETTE_VERSION then

@@ -1,4 +1,4 @@
-local HUD_VERSION = 1
+local HUD_VERSION = 10
 
 -- avoid redefiniton on updates
 if timetravel.HUD_VERSION == nil or timetravel.HUD_VERSION < HUD_VERSION then
