@@ -122,14 +122,15 @@ timetravel.changePositions = function(mo, dontrunextralogic)
 			
 				S_StartSound(mo, sfx_ttfrag)
 				if mo.linkedItem then S_StartSound(mo.linkedItem, sfx_ttfrag) end
-				P_KillMobj(mo) -- DEATH.
 				
 				-- Destroy everything in the hnext chain.
 				-- (Orbinals, 'nanas, Rocket Sneakers)
 				while hNext and hNext.valid do
-					P_RemoveMobj(hNext)
+					P_KillMobj(hNext)
 					hNext = mo.hnext
 				end
+				
+				P_KillMobj(mo) -- DEATH.
 			end
 		end
 	end
@@ -150,6 +151,12 @@ timetravel.teleport = function(mo, dontrunhooks)
 	
 	timetravel.changePositions(mo)
 	
+	if consoleplayer and player and timetravel.isDisplayPlayer(player) ~= -1 and not player.exiting then
+		COM_BufInsertText(consoleplayer, "resetcamera")
+	end
+	
+	if not (mo and mo.valid) then return true end
+	
 	local volume = 255
 	-- Don't make the intro teleports exceedingly loud.
 	if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then
@@ -163,10 +170,6 @@ timetravel.teleport = function(mo, dontrunhooks)
 	while moHnext ~= nil do
 		if moHnext.timetravel then timetravel.changePositions(moHnext) end
 		moHnext = moHnext.hnext
-	end
-	
-	if consoleplayer and player and timetravel.isDisplayPlayer(player) ~= -1 and not player.exiting then
-		COM_BufInsertText(consoleplayer, "resetcamera")
 	end
 	
 	return true
