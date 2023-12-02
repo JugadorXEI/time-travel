@@ -16,6 +16,10 @@ Because there's no way to directly hook into the item odds calculation, I have t
 All I change is the PDI calculation, which I change in this function, customPDIcalc.
 If you want to make your stuff compatible with mine, use this to calculate PDIs for time travel maps.
 Thank you.	
+
+02/12/2023 (dd/mm/aaaa) FIXME: No compatibility with conga calc distributions, this script is pretty much
+in maintenance mode and I really don't want to enter the item odds calculation nightmare again, sorry.
+Feel free to PR me a fix with that if you see it and you care, though.
 ]]
 timetravel.customPDIcalc = function(p, p2, pingame)
 	local pdis = 0
@@ -77,14 +81,11 @@ local function customItemOddsCalcFunc(p, mashed, pingame, spbrush, dontforcespb)
 		if (pks[k_roulettetype] == 1 and oddsvalid[2])
 			-- 1 is the extreme odds of player-controlled "Karma" items
 			useodds = 2
-			--debug_useoddsstopcode = 8
 		else
 			useodds = 1
-			--debug_useoddsstopcode = 9
 			if (oddsvalid[1] == false and oddsvalid[2])
 				-- try to use karma odds as a fallback
 				useodds = 2
-				--debug_useoddsstopcode = 10
 			end
 		end
 	else
@@ -105,33 +106,34 @@ local function customItemOddsCalcFunc(p, mashed, pingame, spbrush, dontforcespb)
 			pdis = (3 * $) >> 1
 		end
 		
-		pdis = ((28 + (8-pingame)) * $) / 28
+		if xItemLib.cvars.bSmugglerBonus.value 
+			and smuggleDetection()
+			and pks[k_position] > 1 
+		then -- Haha, FUCK YOU
+			pdis = (6*$)/5
+		end
+
+		pdis = ((28 + 8 - min(pingame, 16)) * $) / 28
 		
 		if pingame == 1 and oddsvalid[1] then					-- Record Attack, or just alone
 			useodds = 1
-			--debug_useoddsstopcode = 0
 		elseif pdis <= 0 then									-- (64*14) *  0 =     0
 			useodds = disttable[1]
-			--debug_useoddsstopcode = 1
 		elseif pks[k_position] == 2 and oddsvalid[10] and (spbplace == -1) and (not indirectitemcooldown) and (not dontforcespb) and (pdis > distvar*6) then -- Force SPB in 2nd
 			useodds = 10
-			--debug_useoddsstopcode = 7
 		elseif pdis > distvar * ((12 * distlen) / 14) then -- (64*14) * 12 = 10752
 			useodds = disttable[distlen]
-			p.playerbot = nil
-			--debug_useoddsstopcode = 2
 		else
 			for i = 1, 12 do
 				if pdis <= distvar * ((i * distlen) / 14) then
 					useodds = disttable[((i * distlen) / 14)] + 1
-					--debug_useoddsstopcode = 3
 					break
 				end
 			end
 		end
 	end
-	--print("Got useodds "..useodds.." (kart useodds "..(useodds - 1).."). (position: "..p.kartstuff[k_position]..", distance: "..pdis..", stopcode: "..debug_useoddsstopcode..")") 
-	--debug_useoddsstopcode = nil
+	
+	-- lastpdis = pdis -- Sorry Ash!
 	
 	distvar = nil
 	i = nil
