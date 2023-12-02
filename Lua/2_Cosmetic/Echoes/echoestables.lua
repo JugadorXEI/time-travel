@@ -31,6 +31,8 @@ local R_PointToAngle2 = R_PointToAngle2
 local P_SpawnMobj = P_SpawnMobj
 local searchBlockmap = searchBlockmap
 
+local playerHeight = mobjinfo[MT_PLAYER].height
+
 timetravel.typesToEcho = {
 	-- Vanilla:
 	"MT_PLAYER",
@@ -128,12 +130,12 @@ timetravel.additionalHittables = {
 timetravel.optimizedExplosion = function(mobj)
 	-- Absolutely remove anything that's going up or down.
 	local momz = abs(mobj.momz)
-	if momz > 8<<FRACBITS then
+	if momz > 4<<FRACBITS then
 		P_RemoveMobj(mobj)
 		return true
 	end
 	
-	mobj.height = mobjinfo[MT_PLAYER].height * 4
+	mobj.height = playerHeight * 4
 	
 	return false
 end
