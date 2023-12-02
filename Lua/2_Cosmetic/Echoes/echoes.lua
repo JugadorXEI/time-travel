@@ -241,22 +241,21 @@ timetravel.echoes_Thinker = function(mobj)
 	
 	if linkedItem.type == MT_PLAYER then
 		mobj.skin = linkedItem.skin
+		mobj.color = linkedItem.color
+		mobj.sprite = linkedItem.sprite
+		mobj.scale = linkedItem.scale
+		mobj.destscale = linkedItem.destscale
+		mobj.height = linkedItem.height
+		mobj.radius = linkedItem.radius
+		mobj.flags2 = linkedItem.flags2
 	end
 	
-	mobj.color = linkedItem.color
-	mobj.sprite = linkedItem.sprite
-	mobj.scale = linkedItem.scale
-	mobj.destscale = linkedItem.destscale
-	mobj.height = linkedItem.height
-	mobj.radius = linkedItem.radius
+	mobj.colorized = true
 	
 	if linkedItem.type == MT_PLAYER then
 		mobj.angle = linkedItem.player.frameangle
 	else mobj.angle = linkedItem.angle
 	end
-	
-	mobj.flags2 = linkedItem.flags2
-	mobj.colorized = true
 	
 	local transFlag = 0	
 	if (linkedItem.flags & MF_SHOOTABLE) then
