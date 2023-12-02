@@ -14,6 +14,7 @@ Adding it onto a level works as follows:
 * Open this file in SLADE. Copy and paste all of the files inside of your own PK3. If you're using a WAD file, you may need to set the markers manually for each type of file as well.
 * Set the Map Headers as described below.
 * Create a minimap for the future version of the level.
+* For the Future version of the level, give all Boss Waypoints the `[4] Special` flag.
 * Done!
 ## Map Headers
 * **Lua.TT_2ndMapXYOffset**
