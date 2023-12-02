@@ -19,6 +19,7 @@ Adding it onto a level works as follows:
 * **Lua.TT_2ndMapXYOffset**
 	* Takes two comma-delimited numbers for the X and Y offset for the Future version of the level (for example. `16640,0`). This offset will be used for time travel teleports and echo positioning.
 	* The best way to obtain this value is by using Zone Builder's Draw Rectangle Tool, clicking somewhere in the Past version of the level (preferably the corner of a room, for example), and then place your cursor on the equivalent part of the level in the Future version of the map. The width and height of this rectangle will be the offset you set in this header.
+
 ![Draw Rectangle Tool showing 1024,4096](https://github.com/JugadorXEI/time-travel/assets/1565198/16a0387d-bfc2-4d5e-b014-74128c5be9fd)
 * **Lua.TT_2ndMapSkyNum**
 	* Takes a sky number (for example. `8482`). The sky texture that will be used when the player is in the future version of the level.
@@ -30,6 +31,7 @@ Adding it onto a level works as follows:
 * **Lua.MMLib_URBounds**
 	* Takes two comma-delimited numbers that denine the upper right position of the Past level (for example, `-15616,31872`). This is used for the minimap boundaries.
 	* In the lower right of Zone Builder's interface, wherever you place your cursor will show you the absolute position it would be in the level. Place your cursor on the upper right part of the level (including the empty space), note it, and put it as this level header
+ 
 ![Where the cursor should be for getting the lowest point and upper right points for the minimap.](https://github.com/JugadorXEI/time-travel/assets/1565198/d503cb46-9dcf-4272-907c-7b9496b5f073)
 * **Lua.musname_future**
 	* Takes a music lump name (for example, `CHRSHF`). This is the music lump used when the player is in the future. Optional.
