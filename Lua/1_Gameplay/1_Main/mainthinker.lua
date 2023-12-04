@@ -15,6 +15,7 @@ addHook("PreThinkFrame", function()
 	
 	timetravel.dynMusThinker()
 	timetravel.hudMinimapThinker()
+	timetravel.echoes_OncePerFrameCalc()
 end)
 
 -- This needs to happen later.

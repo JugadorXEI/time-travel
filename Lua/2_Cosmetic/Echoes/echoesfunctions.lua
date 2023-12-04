@@ -299,7 +299,7 @@ timetravel.SpawnEchoMobj = function(mo)
 	end
 
 	ghost.color 	= mo.color
-	ghost.colorized = mo.colorized
+	ghost.colorized = true
 
 	if mo.player then
 		ghost.angle = mo.player.frameangle

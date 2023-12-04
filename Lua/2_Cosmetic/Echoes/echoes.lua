@@ -58,6 +58,8 @@ timetravel.echoBonkCooldown = (TICRATE/2) - 2
 timetravel.echoItemCollideCooldown = TICRATE/4
 timetravel.validTypesToEcho = {}
 
+local wavyTransFlag = FF_TRANS50
+
 -- Helpers
 local function isPlayerDamaged(player, withItemStates, alsoFlashTics)
 	if alsoFlashTics == nil then alsoFlashTics = true end
@@ -219,6 +221,10 @@ timetravel.echoes_CollisionHandler = function(collisionReceiver)
 	end
 end
 
+timetravel.echoes_OncePerFrameCalc = function(mobj)
+	wavyTransFlag = FF_TRANS50 - abs(FF_TRANS10 * (((TICRATE/2) - (leveltime % TICRATE)) / 4))
+end
+
 timetravel.echoes_Thinker = function(mobj)
 	local linkedItem = mobj.linkedItem
 	local xOffset, yOffset = timetravel.determineTimeWarpPosition(linkedItem)
@@ -242,15 +248,11 @@ timetravel.echoes_Thinker = function(mobj)
 	if linkedItem.type == MT_PLAYER then
 		mobj.skin = linkedItem.skin
 		mobj.color = linkedItem.color
-		mobj.height = linkedItem.height
-		mobj.radius = linkedItem.radius
 		mobj.flags2 = linkedItem.flags2
 	end
 	
 	mobj.sprite = linkedItem.sprite
-	mobj.scale = linkedItem.scale
 	mobj.destscale = linkedItem.destscale
-	mobj.colorized = true
 	
 	if linkedItem.type == MT_PLAYER then
 		mobj.angle = linkedItem.player.frameangle
@@ -259,7 +261,7 @@ timetravel.echoes_Thinker = function(mobj)
 	
 	local transFlag = 0	
 	if (linkedItem.flags & MF_SHOOTABLE) then
-		transFlag = FF_TRANS50 - abs(FF_TRANS10 * (((TICRATE/2) - (leveltime % TICRATE)) / 4))
+		transFlag = wavyTransFlag
 	elseif (linkedItem.frame & FF_TRANSMASK) == 0 then
 		transFlag = FF_TRANS50
 	end	
