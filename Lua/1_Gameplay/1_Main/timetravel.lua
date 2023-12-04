@@ -105,7 +105,7 @@ timetravel.changePositions = function(mo, dontrunextralogic)
 		mo.linkedItem.justEchoTeleported = true
 	end
 	
-	if mo.z < mo.floorz then
+	if mo.z < mo.floorz and (mo.flags & MF_NOBLOCKMAP|MF_NOCLIP|MF_NOCLIPTHING) == 0 then -- Don't kill things that cannot be crushed.
 		-- print(abs(mo.floorz - mo.z)>>FRACBITS + " | " + ((mo.height * 3) >>FRACBITS))
 		if abs(mo.floorz - mo.z) > mo.height then
 			if timetravel.hasBackrooms and P_RandomChance(FRACUNIT/100) then
