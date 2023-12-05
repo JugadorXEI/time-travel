@@ -1,4 +1,4 @@
-local MAINTHINKER_VERSION = 10
+local MAINTHINKER_VERSION = 11
 
 -- avoid redefiniton on updates
 if timetravel.MAINTHINKER_VERSION == nil or timetravel.MAINTHINKER_VERSION < MAINTHINKER_VERSION then

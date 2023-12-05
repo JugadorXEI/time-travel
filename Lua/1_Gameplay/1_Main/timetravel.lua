@@ -1,4 +1,4 @@
-local VERSION = 10
+local VERSION = 11
 
 -- avoid redefiniton on updates
 if timetravel.VERSION == nil or timetravel.VERSION < VERSION then

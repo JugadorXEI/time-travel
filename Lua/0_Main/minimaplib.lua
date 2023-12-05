@@ -1,4 +1,4 @@
-local VERSION = 10
+local VERSION = 11
 
 if minimaplib == nil then
 	rawset(_G, "minimaplib", {})
@@ -400,6 +400,8 @@ addHook("ThinkFrame", function()
 end)
 
 addHook("NetVars", function(network)
+	if minimaplib.VERSION > VERSION then return end
+
 	minimaplib.isMinimapLibActive = network(minimaplib.isMinimapLibActive)
 	if minimaplib.isMinimapLibActive then
 		hudDisable("minimap")

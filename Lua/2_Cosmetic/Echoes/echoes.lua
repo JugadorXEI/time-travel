@@ -1,4 +1,4 @@
-local ECHOES_VERSION = 10
+local ECHOES_VERSION = 11
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_VERSION == nil or timetravel.ECHOES_VERSION < ECHOES_VERSION then
@@ -346,6 +346,7 @@ end, MT_ECHOGHOST)
 
 -- Fix false cases of the echoes just dying if you touch them weird.
 addHook("TouchSpecial", function(special, toucher)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
 	return true
 end, MT_ECHOGHOST)
 
@@ -418,6 +419,7 @@ addHook("MobjThinker", function(mobj)
 end)
 
 addHook("MobjSpawn", function(mobj)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
 	-- Check if this is a echoes-able mobj.
 	for _, value in ipairs(timetravel.validTypesToEcho) do
 		if value == mobj.type then

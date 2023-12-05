@@ -1,4 +1,4 @@
-local WAYPOINTS_VERSION = 10
+local WAYPOINTS_VERSION = 11
 
 -- avoid redefiniton on updates
 if timetravel.WAYPOINTS_VERSION == nil or timetravel.WAYPOINTS_VERSION < WAYPOINTS_VERSION then
@@ -218,6 +218,7 @@ timetravel.waypointsInit = function()
 end
 
 addHook("NetVars", function(network)
+	if timetravel.WAYPOINTS_VERSION > WAYPOINTS_VERSION then return end
 	timetravel.presentWaypoints = network(timetravel.presentWaypoints)
 	timetravel.futureWaypoints = network(timetravel.futureWaypoints)
 	timetravel.numstarposts = network(timetravel.numstarposts)

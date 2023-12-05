@@ -1,4 +1,4 @@
-local ECHOES_FUNCS_VERSION = 10
+local ECHOES_FUNCS_VERSION = 11
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_FUNCS_VERSION == nil or timetravel.ECHOES_FUNCS_VERSION < ECHOES_FUNCS_VERSION then
@@ -315,7 +315,6 @@ timetravel.SpawnEchoMobj = function(mo)
 	ghost.radius	= FixedMul(mo.radius, timetravel.echoRadiusMultiplier)
 	ghost.height	= mo.height
 	ghost.fuse 		= -1
-	
 	
 	if mo.skin ~= nil then
 		ghost.skin 	= mo.skin
