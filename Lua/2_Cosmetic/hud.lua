@@ -1,3 +1,8 @@
+--[[
+GPLv2 notice: K_FindCheckX and K_DrawKartPlayerCheckEX Lua ports with
+some modifications that account for ChronoShift systems, made 15/01/2023 (dd/mm/aaaa).
+]]
+
 local HUD_VERSION = 10
 
 -- avoid redefiniton on updates

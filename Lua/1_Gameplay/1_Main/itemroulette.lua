@@ -1,3 +1,8 @@
+--[[
+GPLv2 notice: Reimplementation of item roulette PDI calculation,
+made 15/01/2023 (dd/mm/aaaa).
+]]
+
 local ROULETTE_VERSION = 10
 
 -- avoid redefiniton on updates

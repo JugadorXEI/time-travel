@@ -1,3 +1,8 @@
+--[[
+GPLv2 notice: Modifications to K_drawKartMinimap and K_drawKartMinimapHead, alongside
+various helper functions derived from Kart Krew code, made 15/01/2023 (dd/mm/aaaa)..
+]]
+
 local VERSION = 11
 
 if minimaplib == nil then
