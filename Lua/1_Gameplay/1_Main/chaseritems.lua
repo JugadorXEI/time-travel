@@ -1,3 +1,8 @@
+--[[
+GPLv2 notice: K_FindJawzTargetEX is a Lua port and reimplementation of K_FindJawzTarget,
+made 15/01/2023 (dd/mm/aaaa).
+]]
+
 -- You are the Chaser! Bring it!
 local CHASER_VERSION = 11
 

@@ -1,3 +1,9 @@
+--[[
+GPLv2 notice: Lua ports of sound-related actions:
+A_PlaySound, A_Pain, A_PlayActiveSound, A_PlayAttackSound,
+A_PlaySeeSound and A_Scream, made 15/01/2023 (dd/mm/aaaa).
+]]
+
 local ECHOES_ACTIONS_VERSION = 10
 
 -- avoid redefiniton on updates

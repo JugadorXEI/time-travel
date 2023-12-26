@@ -1,3 +1,9 @@
+--[[
+GPLv2 notice: Lua ports of sound-related function:
+K_UpdateEngineSounds, K_UpdateInvincibilitySounds, and
+P_SkidAndDriftNoises, made 15/01/2023 (dd/mm/aaaa).
+]]
+
 local ECHOES_FUNCS_VERSION = 11
 
 -- avoid redefiniton on updates

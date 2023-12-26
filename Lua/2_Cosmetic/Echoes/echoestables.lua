@@ -1,3 +1,8 @@
+--[[
+GPLv2 notice: Lua ports of various SFX-related parts of objects.
+Made 15/01/2023 (dd/mm/aaaa)
+]]
+
 local ECHOES_TABLES_VERSION = 10
 
 -- avoid redefiniton on updates
