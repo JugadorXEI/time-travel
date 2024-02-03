@@ -3,7 +3,7 @@ GPLv2 notice: Reimplementation of item roulette PDI calculation,
 made 15/01/2023 (dd/mm/aaaa).
 ]]
 
-local ROULETTE_VERSION = 10
+local ROULETTE_VERSION = 11
 
 -- avoid redefiniton on updates
 if timetravel.ROULETTE_VERSION == nil or timetravel.ROULETTE_VERSION < ROULETTE_VERSION then
@@ -44,6 +44,41 @@ timetravel.customPDIcalc = function(p, p2, pingame)
 	end
 	
 	return pdis
+end
+
+local function smuggleDetection()
+	local group = {}
+	local itemData = {}
+	local itemFlags = 0
+	for p in players.iterate
+		if not p.spectator then
+			table.insert(group, p)
+		end
+	end
+	
+	for i=1, #group
+		itemFlags = 0
+		if group[i].kartstuff[k_itemtype] then
+			itemData = xItemLib.func.getItemDataById(group[i].kartstuff[k_itemtype])
+			if itemData then
+				itemFlags = itemData.flags
+			end
+		end
+		if 
+			group[i].kartstuff[k_position] <= 2
+			and (
+				(itemFlags and (itemFlags & XIF_SMUGGLECHECK))
+				or group[i].kartstuff[k_invincibilitytimer] > 0
+				or group[i].kartstuff[k_growshrinktimer] > 0
+				or (HugeQuest and group[i].hugequest.huge > 0)
+			)
+		then
+			--print("SMUGGLER DETECTED")
+			return true
+		end
+	end
+
+	return false
 end
 
 local function customItemOddsCalcFunc(p, mashed, pingame, spbrush, dontforcespb)
