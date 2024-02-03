@@ -1,4 +1,4 @@
-local ECHOES_VERSION = 11
+local ECHOES_VERSION = 12
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_VERSION == nil or timetravel.ECHOES_VERSION < ECHOES_VERSION then
@@ -39,6 +39,7 @@ local GT_MATCH = GT_MATCH
 local S_INVISIBLE = S_INVISIBLE
 
 local table_insert = table.insert
+local pairs = pairs
 local ipairs = ipairs
 local K_SpawnMineExplosion = K_SpawnMineExplosion
 local P_SpawnShadowMobj = P_SpawnShadowMobj
@@ -272,6 +273,17 @@ timetravel.echoes_Thinker = function(mobj)
 	timetravel.playEchoIdleBehaviour(mobj)
 end
 
+-- Echoes spawn queue. Any mobjs that need an echo are added to this table.
+-- This weird setup is required because some mobjs (namely, items spawned by players)
+-- need their echo to run immediately after spawning, in order to register point-blank hits.
+local echoqueue = {}
+timetravel.echoes_SpawnQueuedEchoes = function()
+	for mobj in pairs(echoqueue) do
+		echoqueue[mobj] = nil
+		if mobj.valid then timetravel.echoes_SpawnHandler(mobj) end
+	end
+end
+
 addHook("MobjCollide", function(thing, tmthing)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
 	
@@ -405,16 +417,23 @@ addHook("ThinkFrame", function()
 	if not timetravel.isActive then return end
 	if leveltime < 3 then return end
 
+	timetravel.echoes_SpawnQueuedEchoes()
+
 	for mobj in thinkers.iterate("mobj") do
-		-- Spawn procedure for normal mobjs - it will have an echo if applicable.
-		if mobj.echoable then
-			timetravel.echoes_SpawnHandler(mobj)
-		end
-		if mobj.valid and mobj.linkedItem ~= nil then
+		if mobj.linkedItem ~= nil then
 			-- Handle echo-to-nonecho collision stuff here.
 			timetravel.echoes_CollisionHandler(mobj)
 		end
 	end
+end)
+
+addHook("PlayerThink", function()
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
+	if leveltime < 3 then return end
+
+	-- Spawn any queued echoes that appeared during P_PlayerThink.
+	timetravel.echoes_SpawnQueuedEchoes()
 end)
 
 addHook("MobjThinker", function(mobj)
@@ -433,6 +452,7 @@ addHook("MobjSpawn", function(mobj)
 	for _, value in ipairs(timetravel.validTypesToEcho) do
 		if value == mobj.type then
 			mobj.echoable = true
+			echoqueue[mobj] = true
 			break
 		end
 	end
