@@ -15,6 +15,8 @@ local k_roulettetype = k_roulettetype
 local R_PointToDist2 = R_PointToDist2
 local G_BattleGametype = G_BattleGametype
 
+local XIF_SMUGGLECHECK = 128 --item contributes to the smuggle detection
+
 --[[
 Dear XItem modder,
 Because there's no way to directly hook into the item odds calculation, I have to override the function.
