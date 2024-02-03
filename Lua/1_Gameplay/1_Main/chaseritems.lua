@@ -256,65 +256,61 @@ addHook("MobjSpawn", function(mo)
 	mo.extravalue1 = 69
 end, MT_JAWZ)
 
-addHook("MobjThinker", function(mo)
-	if timetravel.CHASER_VERSION > CHASER_VERSION then return end
-	if not timetravel.isActive then return end
-	local isItemTrackerType = false
-	for i = 1, #types do
-		isItemTrackerType = (types[i] == mo.type)
-		if isItemTrackerType then break end
-	end
-	if not isItemTrackerType then return end
-	if mo.timetravel == nil then mo.timetravel = {} end
-	
-	local itemTarget = mo.tracer
-	
-	local justSpawned = false
-	if mo.timetravel.isTimeWarped == nil then
-		local owner = mo.target
-		if owner then
-			mo.timetravel.isTimeWarped = owner.player.mo.timetravel.isTimeWarped
-		end
-			
-		if mo.type == MT_JAWZ and itemTarget == nil then
-			local ownerPlayer = nil
-			if owner then ownerPlayer = owner.player end
-			
-			if owner and ownerPlayer then
-				local finalJawzTarget = timetravel.K_FindJawzTargetEX(owner, ownerPlayer)
-				if finalJawzTarget then
-					itemTarget = finalJawzTarget.mo
-					mo.tracer = itemTarget
+for _, type in pairs(types) do
+	addHook("MobjThinker", function(mo)
+		if timetravel.CHASER_VERSION > CHASER_VERSION then return end
+		if not timetravel.isActive then return end
+		if mo.timetravel == nil then mo.timetravel = {} end
+		
+		local itemTarget = mo.tracer
+		
+		local justSpawned = false
+		if mo.timetravel.isTimeWarped == nil then
+			local owner = mo.target
+			if owner then
+				mo.timetravel.isTimeWarped = owner.player.mo.timetravel.isTimeWarped
+			end
+				
+			if mo.type == MT_JAWZ and itemTarget == nil then
+				local ownerPlayer = nil
+				if owner then ownerPlayer = owner.player end
+				
+				if owner and ownerPlayer then
+					local finalJawzTarget = timetravel.K_FindJawzTargetEX(owner, ownerPlayer)
+					if finalJawzTarget then
+						itemTarget = finalJawzTarget.mo
+						mo.tracer = itemTarget
+					end
 				end
 			end
+			justSpawned = true
 		end
-		justSpawned = true
-	end
 
-	if justSpawned then return end
-	if mo.type == MT_SPB and mo.threshold ~= 0 then return end
-	-- Chasing!
-	
-	if itemTarget == nil then return end
-	
-	if mo.type == MT_JAWZ then
-		if mo.health > 0 and mo.reticule == nil then
-			local reticule = createPlayerReticule(itemTarget, true)
-			reticule.color = mo.cvmem
-			reticule.extravalue = 1
-			reticule.tracer = mo
-			mo.reticule = reticule
-		elseif mo.health <= 0 and (mo.reticule and mo.reticule.valid) then
-			P_KillMobj(mo.reticule)
-			mo.reticule = nil
+		if justSpawned then return end
+		if mo.type == MT_SPB and mo.threshold ~= 0 then return end
+		-- Chasing!
+		
+		if itemTarget == nil then return end
+		
+		if mo.type == MT_JAWZ then
+			if mo.health > 0 and mo.reticule == nil then
+				local reticule = createPlayerReticule(itemTarget, true)
+				reticule.color = mo.cvmem
+				reticule.extravalue = 1
+				reticule.tracer = mo
+				mo.reticule = reticule
+			elseif mo.health <= 0 and (mo.reticule and mo.reticule.valid) then
+				P_KillMobj(mo.reticule)
+				mo.reticule = nil
+			end
 		end
-	end
-	
-	if mo.timetravel.isTimeWarped ~= itemTarget.timetravel.isTimeWarped then
-		timetravel.changePositions(mo)
-	end
-	
-end)
+		
+		if mo.timetravel.isTimeWarped ~= itemTarget.timetravel.isTimeWarped then
+			timetravel.changePositions(mo)
+		end
+	end, type)
+end
+
 
 local reticuleState = S_PLAYERRETICULE
 addHook("MapChange", function(mapnum)

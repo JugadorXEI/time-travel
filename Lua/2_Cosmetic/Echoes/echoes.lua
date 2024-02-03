@@ -400,23 +400,32 @@ addHook("PlayerExplode", function(player, inflictor, source)
 	end
 end)
 
+addHook("ThinkFrame", function()
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
+	if leveltime < 3 then return end
+
+	for mobj in thinkers.iterate("mobj") do
+		-- Spawn procedure for normal mobjs - it will have an echo if applicable.
+		if mobj.echoable then
+			timetravel.echoes_SpawnHandler(mobj)
+		end
+		if mobj.valid and mobj.linkedItem ~= nil then
+			-- Handle echo-to-nonecho collision stuff here.
+			timetravel.echoes_CollisionHandler(mobj)
+		end
+	end
+end)
+
 addHook("MobjThinker", function(mobj)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
 	if not timetravel.isActive then return end
 	if leveltime < 3 then return end
-	
-	if not (mobj and mobj.valid) then return end
 
-	if mobj.type == MT_ECHOGHOST and mobj.linkedItem and mobj.linkedItem.valid then -- Movement thinker for echo ghosts
+	if mobj.linkedItem and mobj.linkedItem.valid then
 		timetravel.echoes_Thinker(mobj)
-	else
-		-- Spawn procedure for other mobjs - a normal mobj will have an echo if applicable.
-		timetravel.echoes_SpawnHandler(mobj)
-		if not (mobj and mobj.valid) then return end
-		-- Handle echo-to-nonecho collision stuff here.
-		timetravel.echoes_CollisionHandler(mobj)
 	end
-end)
+end, MT_ECHOGHOST)
 
 addHook("MobjSpawn", function(mobj)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
