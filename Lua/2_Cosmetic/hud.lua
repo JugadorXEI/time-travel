@@ -3,7 +3,7 @@ GPLv2 notice: K_FindCheckX and K_DrawKartPlayerCheckEX Lua ports with
 some modifications that account for ChronoShift systems, made 15/01/2023 (dd/mm/aaaa).
 ]]
 
-local HUD_VERSION = 10
+local HUD_VERSION = 11
 
 -- avoid redefiniton on updates
 if timetravel.HUD_VERSION == nil or timetravel.HUD_VERSION < HUD_VERSION then
@@ -73,6 +73,12 @@ local function localizeHUDfunctions(v)
 	areHUDfunctionsLocalized = true
 end
 
+-- Allow external scripts to supply HUD offsets.
+timetravel.getHudOffsets = function(x, y)
+	-- return x + <your X offset>, y + <your Y offset>
+	return x, y
+end
+
 local function getSplitscreenFlags(player)
 	local flags = 0
 	if splitscreen > 1 then -- P1, P2, P3, P4
@@ -136,6 +142,8 @@ local function getItemBoxPosition(player, centered)
 			yPos = $ + 25
 		end
 	end
+
+	xPos, yPos = timetravel.getHudOffsets($1, $2)
 
 	return xPos, yPos 
 end
@@ -251,7 +259,7 @@ local function cd_getPlayerOffset(player)
 			end
 		end
 	end
-	
+
 	return {30, 62}
 end
 
@@ -322,6 +330,13 @@ local function K_DrawKartPlayerCheckEX(player)
 	end
 end
 
+timetravel.drawItemBox = function(v, player, xOffset, yOffset, flags)
+	local itemBoxPatch = itembox_patches[1]
+	if splitscreen > 1 then itemBoxPatch = itembox_patches[2] end
+	
+	hudDraw(xOffset, yOffset, itemBoxPatch, flags)
+end
+
 hud.add(function(v, player)
 	if timetravel.HUD_VERSION > HUD_VERSION then return end
 	if not timetravel.isActive then return end
@@ -369,11 +384,7 @@ hud.add(function(v, player)
 	
 	-- Item Box
 	if not timetravel.hasSomethingInItemBox(player) then
-		-- draw item box
-		local itemBoxPatch = itembox_patches[1]
-		if splitscreen > 1 then itemBoxPatch = itembox_patches[2] end
-		
-		hudDraw(xOffset, yOffset, itemBoxPatch, flags|getSplitscreenFlags(player))
+		timetravel.drawItemBox(v, player, xOffset, yOffset, flags|getSplitscreenFlags(player))
 		
 		if ttd_animDuration[playerLocalNum] < ttd_animLength then
 			ttd_animDuration[playerLocalNum] = $ + 1
@@ -438,6 +449,7 @@ hud.add(function(v, player)
 	
 	if cd_animDuration[playerLocalNum] > 0 then
 		local cd_pos = cd_getPlayerOffset(player)
+		cd_pos[1], cd_pos[2] = timetravel.getHudOffsets($1, $2)
 		
 		if cd_animDuration[playerLocalNum] > cd_animDimensionView then -- Spinning
 
