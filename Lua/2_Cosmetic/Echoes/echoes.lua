@@ -39,7 +39,6 @@ local GT_MATCH = GT_MATCH
 local S_INVISIBLE = S_INVISIBLE
 
 local table_insert = table.insert
-local pairs = pairs
 local ipairs = ipairs
 local K_SpawnMineExplosion = K_SpawnMineExplosion
 local P_SpawnShadowMobj = P_SpawnShadowMobj
@@ -278,8 +277,9 @@ end
 -- need their echo to run immediately after spawning, in order to register point-blank hits.
 local echoqueue = {}
 timetravel.echoes_SpawnQueuedEchoes = function()
-	for mobj in pairs(echoqueue) do
-		echoqueue[mobj] = nil
+	for i = #echoqueue, 1, -1 do
+		local mobj = echoqueue[i]
+		echoqueue[i] = nil
 		if mobj.valid then timetravel.echoes_SpawnHandler(mobj) end
 	end
 end
@@ -452,7 +452,7 @@ addHook("MobjSpawn", function(mobj)
 	for _, value in ipairs(timetravel.validTypesToEcho) do
 		if value == mobj.type then
 			mobj.echoable = true
-			echoqueue[mobj] = true
+			table.insert(echoqueue, mobj)
 			break
 		end
 	end
