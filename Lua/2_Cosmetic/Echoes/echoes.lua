@@ -1,4 +1,4 @@
-local ECHOES_VERSION = 11
+local ECHOES_VERSION = 12
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_VERSION == nil or timetravel.ECHOES_VERSION < ECHOES_VERSION then
@@ -272,6 +272,18 @@ timetravel.echoes_Thinker = function(mobj)
 	timetravel.playEchoIdleBehaviour(mobj)
 end
 
+-- Echoes spawn queue. Any mobjs that need an echo are added to this table.
+-- This weird setup is required because some mobjs (namely, items spawned by players)
+-- need their echo to run immediately after spawning, in order to register point-blank hits.
+local echoqueue = {}
+timetravel.echoes_SpawnQueuedEchoes = function()
+	for i = #echoqueue, 1, -1 do
+		local mobj = echoqueue[i]
+		echoqueue[i] = nil
+		if mobj.valid then timetravel.echoes_SpawnHandler(mobj) end
+	end
+end
+
 addHook("MobjCollide", function(thing, tmthing)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
 	
@@ -400,23 +412,39 @@ addHook("PlayerExplode", function(player, inflictor, source)
 	end
 end)
 
+addHook("ThinkFrame", function()
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
+	if leveltime < 3 then return end
+
+	timetravel.echoes_SpawnQueuedEchoes()
+
+	for mobj in thinkers.iterate("mobj") do
+		if mobj.linkedItem ~= nil then
+			-- Handle echo-to-nonecho collision stuff here.
+			timetravel.echoes_CollisionHandler(mobj)
+		end
+	end
+end)
+
+addHook("PlayerThink", function()
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
+	if leveltime < 3 then return end
+
+	-- Spawn any queued echoes that appeared during P_PlayerThink.
+	timetravel.echoes_SpawnQueuedEchoes()
+end)
+
 addHook("MobjThinker", function(mobj)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
 	if not timetravel.isActive then return end
 	if leveltime < 3 then return end
-	
-	if not (mobj and mobj.valid) then return end
 
-	if mobj.type == MT_ECHOGHOST and mobj.linkedItem and mobj.linkedItem.valid then -- Movement thinker for echo ghosts
+	if mobj.linkedItem and mobj.linkedItem.valid then
 		timetravel.echoes_Thinker(mobj)
-	else
-		-- Spawn procedure for other mobjs - a normal mobj will have an echo if applicable.
-		timetravel.echoes_SpawnHandler(mobj)
-		if not (mobj and mobj.valid) then return end
-		-- Handle echo-to-nonecho collision stuff here.
-		timetravel.echoes_CollisionHandler(mobj)
 	end
-end)
+end, MT_ECHOGHOST)
 
 addHook("MobjSpawn", function(mobj)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
@@ -424,6 +452,7 @@ addHook("MobjSpawn", function(mobj)
 	for _, value in ipairs(timetravel.validTypesToEcho) do
 		if value == mobj.type then
 			mobj.echoable = true
+			table.insert(echoqueue, mobj)
 			break
 		end
 	end
