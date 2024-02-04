@@ -1,4 +1,4 @@
-local ECHOES_VERSION = 12
+local ECHOES_VERSION = 13
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_VERSION == nil or timetravel.ECHOES_VERSION < ECHOES_VERSION then
@@ -252,7 +252,7 @@ timetravel.echoes_Thinker = function(mobj)
 	end
 	
 	mobj.sprite = linkedItem.sprite
-	mobj.destscale = linkedItem.destscale
+	P_SetScale(mobj, linkedItem.scale)
 	
 	if linkedItem.type == MT_PLAYER then
 		mobj.angle = linkedItem.player.frameangle
