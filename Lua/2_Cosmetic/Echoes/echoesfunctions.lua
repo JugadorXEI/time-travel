@@ -4,7 +4,7 @@ K_UpdateEngineSounds, K_UpdateInvincibilitySounds, and
 P_SkidAndDriftNoises, made 15/01/2023 (dd/mm/aaaa).
 ]]
 
-local ECHOES_FUNCS_VERSION = 11
+local ECHOES_FUNCS_VERSION = 12
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_FUNCS_VERSION == nil or timetravel.ECHOES_FUNCS_VERSION < ECHOES_FUNCS_VERSION then
@@ -296,8 +296,7 @@ end
 timetravel.SpawnEchoMobj = function(mo)
 	local ghost = P_SpawnMobj(mo.x, mo.y, mo.z, MT_ECHOGHOST)
 
-	ghost.scale 	= mo.scale
-	ghost.destscale = mo.scale
+	P_SetScale(ghost, mo.scale)
 
 	if mo.eflags & MFE_VERTICALFLIP then
 		ghost.eflags = $ | MFE_VERTICALFLIP
@@ -327,11 +326,11 @@ timetravel.SpawnEchoMobj = function(mo)
 	end
 	
 	if mo.flags2 & MF2_OBJECTFLIP then
-		ghost.flags = $ | MF2_OBJECTFLIP
+		ghost.flags2 = $ | MF2_OBJECTFLIP
 	end
 
 	if not (mo.flags & MF_DONTENCOREMAP) then
-		mo.flags = $ & (~MF_DONTENCOREMAP)
+		ghost.flags = $ & (~MF_DONTENCOREMAP)
 	end
 	
 	return ghost
