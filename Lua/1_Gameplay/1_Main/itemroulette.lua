@@ -16,8 +16,10 @@ local BT_ATTACK = BT_ATTACK
 local ROULETTE_ENDTIC = TICRATE*3
 
 local function isValidItemOddsPlayer(player)
+	if not (player and player.valid and not player.spectator) then return false end
+	
 	local playerMo = player.mo
-	return player.valid and not player.spectator and playerMo and playerMo.valid or playerMo.timetravelconsts == nil
+	return playerMo and playerMo.valid or playerMo.timetravelconsts ~= nil
 end
 
 addHook("PreThinkFrame", function()
@@ -67,28 +69,26 @@ addHook("PreThinkFrame", function()
 	end
 end)
 
-addHook("ThinkFrame", function(player)
+addHook("PlayerThink", function(player)
 	if timetravel.ROULETTE_VERSION > ROULETTE_VERSION then return end
 	if not timetravel.isActive then return end
 	
-	for player in players.iterate do
-		if player.timetravelconsts.itemRollComeBack then
-			local playerMo = player.mo
-			
-			timetravel.changePositions(playerMo, true)
-			
-			local didZActuallyChange = player.timetravelconsts.storedComeBackZ ~= playerMo.z
-			playerMo.z = player.timetravelconsts.storedComeBackZ
-			
-			-- Prevents camera weirdness.
-			if didZActuallyChange and timetravel.isDisplayPlayer(player) ~= -1 then
-				COM_BufInsertText(consoleplayer, "resetcamera")
-			end
-			
-			player.timetravelconsts.itemRollComeBack = false
-			player.timetravelconsts.storedComeBackZ = 0
-		end
+	if not (player.timetravelconsts and player.timetravelconsts.itemRollComeBack) then return end
+	
+	local playerMo = player.mo
+	
+	timetravel.changePositions(playerMo, true)
+	
+	local didZActuallyChange = abs(player.timetravelconsts.storedComeBackZ - playerMo.z) > (64<<FRACBITS)
+	playerMo.z = player.timetravelconsts.storedComeBackZ
+	
+	-- Prevents camera weirdness.
+	if didZActuallyChange and timetravel.isDisplayPlayer(player) ~= -1 then
+		COM_BufInsertText(consoleplayer, "resetcamera")
 	end
+	
+	player.timetravelconsts.itemRollComeBack = false
+	player.timetravelconsts.storedComeBackZ = 0
 end)
 
 addHook("ShouldSquish", function(target, inflictor, source)
