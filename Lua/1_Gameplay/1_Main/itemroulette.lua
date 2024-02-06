@@ -22,7 +22,26 @@ local function isValidItemOddsPlayer(player)
 	return playerMo and playerMo.valid or playerMo.timetravelconsts ~= nil
 end
 
-addHook("PreThinkFrame", function()
+local function initItemOddsTeleport(player)
+	local playerMo = player.mo
+
+	if playerMo.timetravel.isTimeWarped then
+		local ttConsts = player.timetravelconsts
+		ttConsts.itemRollComeBack = true
+		ttConsts.storedComeBackZ = playerMo.z
+		timetravel.changePositions(playerMo, true)
+	end
+end
+
+--[[
+TODO:
+	- Move PreThinkFrame stuff to mainthinker.lua (after input method)
+	- Use Past as the definitive timeline to calculate odds in
+	(instead of switching to the roller's timeline, which causes issues,
+	if multiple people roll at the same time)
+]]
+
+timetravel.itemOddsFixThinker = function()
 	if timetravel.ROULETTE_VERSION > ROULETTE_VERSION then return end
 	if not timetravel.isActive then return end
 	
@@ -50,7 +69,8 @@ addHook("PreThinkFrame", function()
 		local canbemashed = roulettestop <= roulettetic
 		
 		if not (roulettetic >= ROULETTE_ENDTIC or (canbemashed and player.cmd.buttons & BT_ATTACK)) then continue end
-
+		if not player.timetravelconsts.itemRollComeBack then initItemOddsTeleport(player) end
+		
 		for otherPlayer in players.iterate do
 			if otherPlayer == player or not isValidItemOddsPlayer(otherPlayer) then continue end
 			
@@ -59,36 +79,35 @@ addHook("PreThinkFrame", function()
 			local otherPlayerPosition = otherPlayer.kartstuff[k_position]
 			
 			if playerPosition > otherPlayerPosition then
-				if (player.mo.timetravel.isTimeWarped ~= otherPlayer.mo.timetravel.isTimeWarped) then
-					otherPlayer.timetravelconsts.itemRollComeBack = true
-					otherPlayer.timetravelconsts.storedComeBackZ = otherPlayer.mo.z
-					timetravel.changePositions(otherPlayer.mo, true)
-				end
+				initItemOddsTeleport(otherPlayer)
 			end
 		end
 	end
-end)
+end
 
-addHook("PlayerThink", function(player)
+addHook("PlayerThink", function(lastPlayer)
 	if timetravel.ROULETTE_VERSION > ROULETTE_VERSION then return end
 	if not timetravel.isActive then return end
 	
-	if not (player.timetravelconsts and player.timetravelconsts.itemRollComeBack) then return end
+	if not timetravel.isLastPlayer(lastPlayer) then return end
 	
-	local playerMo = player.mo
+	for player in players.iterate do
+		if not (player.timetravelconsts and player.timetravelconsts.itemRollComeBack) then continue end
 	
-	timetravel.changePositions(playerMo, true)
-	
-	local didZActuallyChange = abs(player.timetravelconsts.storedComeBackZ - playerMo.z) > (64<<FRACBITS)
-	playerMo.z = player.timetravelconsts.storedComeBackZ
-	
-	-- Prevents camera weirdness.
-	if didZActuallyChange and timetravel.isDisplayPlayer(player) ~= -1 then
-		COM_BufInsertText(consoleplayer, "resetcamera")
+		local playerMo = player.mo
+		timetravel.changePositions(playerMo, true)
+		
+		local didZActuallyChange = abs(player.timetravelconsts.storedComeBackZ - playerMo.z) > (64<<FRACBITS)
+		playerMo.z = player.timetravelconsts.storedComeBackZ
+		
+		-- Prevents camera weirdness.
+		if didZActuallyChange and timetravel.isDisplayPlayer(player) ~= -1 then
+			COM_BufInsertText(consoleplayer, "resetcamera")
+		end
+		
+		player.timetravelconsts.itemRollComeBack = false
+		player.timetravelconsts.storedComeBackZ = 0
 	end
-	
-	player.timetravelconsts.itemRollComeBack = false
-	player.timetravelconsts.storedComeBackZ = 0
 end)
 
 addHook("ShouldSquish", function(target, inflictor, source)

@@ -1,4 +1,4 @@
-local MAINTHINKER_VERSION = 11
+local MAINTHINKER_VERSION = 12
 
 -- avoid redefiniton on updates
 if timetravel.MAINTHINKER_VERSION == nil or timetravel.MAINTHINKER_VERSION < MAINTHINKER_VERSION then
@@ -16,6 +16,7 @@ addHook("PreThinkFrame", function()
 	timetravel.dynMusThinker()
 	timetravel.hudMinimapThinker()
 	timetravel.echoes_OncePerFrameCalc()
+	timetravel.itemOddsFixThinker()
 end)
 
 -- This needs to happen later.
