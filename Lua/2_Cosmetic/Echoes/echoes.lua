@@ -449,6 +449,7 @@ end, MT_ECHOGHOST)
 
 addHook("MobjSpawn", function(mobj)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
 	-- Check if this is a echoes-able mobj.
 	for _, value in ipairs(timetravel.validTypesToEcho) do
 		if value == mobj.type then
