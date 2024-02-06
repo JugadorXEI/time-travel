@@ -278,7 +278,7 @@ for _, type in pairs(types) do
 				
 			if mo.type == MT_JAWZ then
 				local lastJawzTarget = ownerPlayer.timetravelconsts.lastJawzTargetPrev
-				print(lastJawzTarget)
+
 				if lastJawzTarget > -1 then
 					local jawzTarget = players[lastJawzTarget]
 					if jawzTarget and jawzTarget.mo then
