@@ -1,4 +1,4 @@
-local ECHOES_VERSION = 14
+local ECHOES_VERSION = 15
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_VERSION == nil or timetravel.ECHOES_VERSION < ECHOES_VERSION then
@@ -39,6 +39,7 @@ local GT_MATCH = GT_MATCH
 local S_INVISIBLE = S_INVISIBLE
 
 local table_insert = table.insert
+local table_remove = table.remove
 local ipairs = ipairs
 local K_SpawnMineExplosion = K_SpawnMineExplosion
 local P_SpawnShadowMobj = P_SpawnShadowMobj
@@ -279,7 +280,7 @@ local echoqueue = {}
 timetravel.echoes_SpawnQueuedEchoes = function()
 	for i = #echoqueue, 1, -1 do
 		local mobj = echoqueue[i]
-		echoqueue[i] = nil
+		table_remove(echoqueue, i)
 		if mobj.valid then timetravel.echoes_SpawnHandler(mobj) end
 	end
 end
