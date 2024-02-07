@@ -285,7 +285,7 @@ timetravel.echoes_SpawnQueuedEchoes = function()
 	end
 end
 
-addHook("MobjCollide", function(thing, tmthing)
+timetravel.collisionHookHandler = function(thing, tmthing)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
 	
 	-- Height checks.
@@ -354,7 +354,16 @@ addHook("MobjCollide", function(thing, tmthing)
 	end
 	
 	return false
+end
 
+addHook("MobjMoveCollide", function(tmthing, thing)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
+	return timetravel.collisionHookHandler(tmthing, thing)
+end, MT_ECHOGHOST)
+
+addHook("MobjCollide", function(thing, tmthing)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
+	return timetravel.collisionHookHandler(thing, tmthing)
 end, MT_ECHOGHOST)
 
 -- Fix false cases of the echoes just dying if you touch them weird.
