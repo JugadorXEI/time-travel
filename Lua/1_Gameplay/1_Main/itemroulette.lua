@@ -87,6 +87,25 @@ timetravel.itemOddsFixThinker = function()
 	end
 end
 
+local function movePlayerBackToRealityAfterOdds(player)
+	if not (player.timetravelconsts and player.timetravelconsts.itemRollComeBack) then return false end
+
+	local playerMo = player.mo
+	timetravel.changePositions(playerMo, true)
+	
+	local didZActuallyChange = abs(player.timetravelconsts.storedComeBackZ - playerMo.z) > (64<<FRACBITS)
+	playerMo.z = player.timetravelconsts.storedComeBackZ
+	
+	-- Prevents camera weirdness.
+	if didZActuallyChange and timetravel.isDisplayPlayer(player) ~= -1 then
+		COM_BufInsertText(consoleplayer, "resetcamera")
+	end
+	
+	player.timetravelconsts.itemRollComeBack = false
+	player.timetravelconsts.storedComeBackZ = 0
+	return true
+end
+
 addHook("PlayerThink", function(lastPlayer)
 	if timetravel.ROULETTE_VERSION > ROULETTE_VERSION then return end
 	if not timetravel.isActive then return end
@@ -95,21 +114,7 @@ addHook("PlayerThink", function(lastPlayer)
 	if not timetravel.isLastPlayer(lastPlayer) then return end
 	
 	for player in players.iterate do
-		if not (player.timetravelconsts and player.timetravelconsts.itemRollComeBack) then continue end
-	
-		local playerMo = player.mo
-		timetravel.changePositions(playerMo, true)
-		
-		local didZActuallyChange = abs(player.timetravelconsts.storedComeBackZ - playerMo.z) > (64<<FRACBITS)
-		playerMo.z = player.timetravelconsts.storedComeBackZ
-		
-		-- Prevents camera weirdness.
-		if didZActuallyChange and timetravel.isDisplayPlayer(player) ~= -1 then
-			COM_BufInsertText(consoleplayer, "resetcamera")
-		end
-		
-		player.timetravelconsts.itemRollComeBack = false
-		player.timetravelconsts.storedComeBackZ = 0
+		if not movePlayerBackToRealityAfterOdds(player) then continue end
 	end
 end)
 

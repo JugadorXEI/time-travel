@@ -1,4 +1,4 @@
-local GENERAL_VERSION = 10
+local GENERAL_VERSION = 11
 
 if timetravel == nil then
 	rawset(_G, "timetravel", {})
@@ -140,13 +140,16 @@ timetravel.isDisplayPlayer = function(player)
 end
 
 timetravel.isLastPlayer = function(player)
+	local lastPlayer = nil
 	for i = #players - 1, 0, -1 do
-		if players[i] and i == #player then
-			return true
+		local thisPlayer = players[i]
+		if thisPlayer and thisPlayer.valid then
+			lastPlayer = thisPlayer
+			break
 		end
 	end
 	
-	return false
+	return player == lastPlayer
 end
 
 timetravel.getNormalizedVectors = function(x, y)
