@@ -246,14 +246,17 @@ timetravel.echoes_Thinker = function(mobj)
 	
 	mobj.justEchoTeleported = false
 	
+	mobj.sprite = linkedItem.sprite
+	
 	if linkedItem.type == MT_PLAYER then
 		mobj.skin = linkedItem.skin
 		mobj.color = linkedItem.color
 		mobj.flags2 = linkedItem.flags2
 	end
-	
-	mobj.sprite = linkedItem.sprite
-	P_SetScale(mobj, linkedItem.scale)
+
+	mobj.scale = linkedItem.scale
+	mobj.radius = linkedItem.radius
+	mobj.height = linkedItem.height
 	
 	if linkedItem.type == MT_PLAYER then
 		mobj.angle = linkedItem.player.frameangle
