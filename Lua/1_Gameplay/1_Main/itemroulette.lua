@@ -44,6 +44,8 @@ TODO:
 timetravel.itemOddsFixThinker = function()
 	if timetravel.ROULETTE_VERSION > ROULETTE_VERSION then return end
 	if not timetravel.isActive then return end
+	-- If XItemLib is on, let XItemLib handle it instead (see xiteminterop.lua in 2_Interop folder)
+	if timetravel.isXItemOddsEnabled then return end
 	
 	for player in players.iterate do
 		if not isValidItemOddsPlayer(player) then continue end
@@ -88,6 +90,7 @@ end
 addHook("PlayerThink", function(lastPlayer)
 	if timetravel.ROULETTE_VERSION > ROULETTE_VERSION then return end
 	if not timetravel.isActive then return end
+	if timetravel.isXItemOddsEnabled then return end
 	
 	if not timetravel.isLastPlayer(lastPlayer) then return end
 	
@@ -113,6 +116,7 @@ end)
 addHook("ShouldSquish", function(target, inflictor, source)
 	if timetravel.ROULETTE_VERSION > ROULETTE_VERSION then return end
 	if not timetravel.isActive then return end
+	if timetravel.isXItemOddsEnabled then return end
 	
 	-- We're looking for inflictor-less, source-less squishing.
 	if inflictor ~= nil and source ~= nil then return nil end
