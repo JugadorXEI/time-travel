@@ -4,7 +4,7 @@ made 15/01/2023 (dd/mm/aaaa).
 ]]
 
 -- You are the Chaser! Bring it!
-local CHASER_VERSION = 12
+local CHASER_VERSION = 13
 
 -- avoid redefiniton on updates
 if timetravel.CHASER_VERSION == nil or timetravel.CHASER_VERSION < CHASER_VERSION then
@@ -194,7 +194,7 @@ timetravel.JawzTargettingLogic = function(player)
 		local lasttarg = player.timetravelconsts.lastJawzTarget
 		local targ, ret
 
-		if player.timetravelconsts.lastJawzTarget > -1 and not players[lasttarg].spectator then
+		if lasttarg > -1 and not players[lasttarg].spectator then
 			targ = players[lasttarg]
 			player.timetravelconsts.jawzTargetDelay = $ - 1
 		else targ = timetravel.K_FindJawzTargetEX(player.mo, player) end
@@ -203,7 +203,7 @@ timetravel.JawzTargettingLogic = function(player)
 		if targ and targ.mo and targ.mo.valid then targMo = targ.mo end
 		
 		if not targMo then
-		
+			player.timetravelconsts.lastJawzTargetPrev = -1
 			player.timetravelconsts.lastJawzTarget = -1
 			player.timetravelconsts.jawzTargetDelay = 0
 			
@@ -225,7 +225,7 @@ timetravel.JawzTargettingLogic = function(player)
 			player.timetravelconsts.jawzReticule.target = targMo
 		end
 
-		if (#targ - #players) ~= lasttarg then
+		if #targ ~= lasttarg then
 		
 			if timetravel.isDisplayPlayer(player) ~= -1 or timetravel.isDisplayPlayer(targ) ~= -1 then
 				S_StartSound(nil, sfx_s3k89)
@@ -233,11 +233,13 @@ timetravel.JawzTargettingLogic = function(player)
 				S_StartSound(targMo, sfx_s3k89)
 			end
 
-			player.timetravelconsts.lastJawzTarget = #targ - #players
+			player.timetravelconsts.lastJawzTargetPrev = #targ
+			player.timetravelconsts.lastJawzTarget = #targ
 			player.timetravelconsts.jawzTargetDelay = 5
 		end
 
 	else
+		player.timetravelconsts.lastJawzTargetPrev = player.timetravelconsts.lastJawzTarget
 		player.timetravelconsts.lastJawzTarget = -1
 		player.timetravelconsts.jawzTargetDelay = 0
 		
@@ -264,33 +266,36 @@ for _, type in pairs(types) do
 		
 		local itemTarget = mo.tracer
 		
-		local justSpawned = false
-		if mo.timetravel.isTimeWarped == nil then
+		if not mo.timetravel.chaserInit then
 			local owner = mo.target
-			if owner then
-				mo.timetravel.isTimeWarped = owner.player.mo.timetravel.isTimeWarped
+			if not owner then
+				mo.timetravel.chaserInit = true
+				return nil
 			end
+			
+			local ownerPlayer = owner.player			
+			mo.timetravel.isTimeWarped = owner.timetravel.isTimeWarped
 				
-			if mo.type == MT_JAWZ and itemTarget == nil then
-				local ownerPlayer = nil
-				if owner then ownerPlayer = owner.player end
-				
-				if owner and ownerPlayer then
-					local finalJawzTarget = timetravel.K_FindJawzTargetEX(owner, ownerPlayer)
-					if finalJawzTarget then
-						itemTarget = finalJawzTarget.mo
-						mo.tracer = itemTarget
+			if mo.type == MT_JAWZ then
+				local lastJawzTarget = ownerPlayer.timetravelconsts.lastJawzTargetPrev
+
+				if lastJawzTarget > -1 then
+					local jawzTarget = players[lastJawzTarget]
+					if jawzTarget and jawzTarget.mo then
+						mo.tracer = jawzTarget.mo
+						itemTarget = mo.tracer
 					end
 				end
 			end
-			justSpawned = true
+			
+			mo.timetravel.chaserInit = true
+			return nil
 		end
-
-		if justSpawned then return end
+		
 		if mo.type == MT_SPB and mo.threshold ~= 0 then return end
 		-- Chasing!
 		
-		if itemTarget == nil then return end
+		if not itemTarget then return end
 		
 		if mo.type == MT_JAWZ then
 			if mo.health > 0 and mo.reticule == nil then

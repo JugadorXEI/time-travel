@@ -1,4 +1,4 @@
-local ECHOES_VERSION = 13
+local ECHOES_VERSION = 15
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_VERSION == nil or timetravel.ECHOES_VERSION < ECHOES_VERSION then
@@ -39,6 +39,7 @@ local GT_MATCH = GT_MATCH
 local S_INVISIBLE = S_INVISIBLE
 
 local table_insert = table.insert
+local table_remove = table.remove
 local ipairs = ipairs
 local K_SpawnMineExplosion = K_SpawnMineExplosion
 local P_SpawnShadowMobj = P_SpawnShadowMobj
@@ -245,14 +246,17 @@ timetravel.echoes_Thinker = function(mobj)
 	
 	mobj.justEchoTeleported = false
 	
+	mobj.sprite = linkedItem.sprite
+	
 	if linkedItem.type == MT_PLAYER then
 		mobj.skin = linkedItem.skin
 		mobj.color = linkedItem.color
 		mobj.flags2 = linkedItem.flags2
 	end
-	
-	mobj.sprite = linkedItem.sprite
-	P_SetScale(mobj, linkedItem.scale)
+
+	mobj.scale = linkedItem.scale
+	mobj.radius = linkedItem.radius
+	mobj.height = linkedItem.height
 	
 	if linkedItem.type == MT_PLAYER then
 		mobj.angle = linkedItem.player.frameangle
@@ -279,12 +283,12 @@ local echoqueue = {}
 timetravel.echoes_SpawnQueuedEchoes = function()
 	for i = #echoqueue, 1, -1 do
 		local mobj = echoqueue[i]
-		echoqueue[i] = nil
+		table_remove(echoqueue, i)
 		if mobj.valid then timetravel.echoes_SpawnHandler(mobj) end
 	end
 end
 
-addHook("MobjCollide", function(thing, tmthing)
+timetravel.collisionHookHandler = function(thing, tmthing)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
 	
 	-- Height checks.
@@ -353,7 +357,16 @@ addHook("MobjCollide", function(thing, tmthing)
 	end
 	
 	return false
+end
 
+addHook("MobjMoveCollide", function(tmthing, thing)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
+	return timetravel.collisionHookHandler(tmthing, thing)
+end, MT_ECHOGHOST)
+
+addHook("MobjCollide", function(thing, tmthing)
+	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return false end
+	return timetravel.collisionHookHandler(thing, tmthing)
 end, MT_ECHOGHOST)
 
 -- Fix false cases of the echoes just dying if you touch them weird.
@@ -448,6 +461,7 @@ end, MT_ECHOGHOST)
 
 addHook("MobjSpawn", function(mobj)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
 	-- Check if this is a echoes-able mobj.
 	for _, value in ipairs(timetravel.validTypesToEcho) do
 		if value == mobj.type then
