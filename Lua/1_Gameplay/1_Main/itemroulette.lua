@@ -33,14 +33,6 @@ local function initItemOddsTeleport(player)
 	end
 end
 
---[[
-TODO:
-	- Move PreThinkFrame stuff to mainthinker.lua (after input method)
-	- Use Past as the definitive timeline to calculate odds in
-	(instead of switching to the roller's timeline, which causes issues,
-	if multiple people roll at the same time)
-]]
-
 timetravel.itemOddsFixThinker = function()
 	if timetravel.ROULETTE_VERSION > ROULETTE_VERSION then return end
 	if not timetravel.isActive then return end
@@ -52,10 +44,6 @@ timetravel.itemOddsFixThinker = function()
 		
 		local pks = player.kartstuff
 		local playerPosition = pks[k_position]
-		
-		-- You don't care about item odds if you're first, they're fixed for you.
-		if playerPosition <= 1 then continue end
-		
 		local roulettetic = pks[k_itemroulette]
 		
 		if roulettetic <= 0 then continue end
@@ -77,12 +65,8 @@ timetravel.itemOddsFixThinker = function()
 			if otherPlayer == player or not isValidItemOddsPlayer(otherPlayer) then continue end
 			
 			-- Two people mashed or rolled at the same time, non-sense time.
-			if otherPlayer.timetravelconsts.itemRollComeBack then continue end
-			local otherPlayerPosition = otherPlayer.kartstuff[k_position]
-			
-			if playerPosition > otherPlayerPosition then
-				initItemOddsTeleport(otherPlayer)
-			end
+			if otherPlayer.timetravelconsts.itemRollComeBack then continue end			
+			initItemOddsTeleport(otherPlayer)
 		end
 	end
 end

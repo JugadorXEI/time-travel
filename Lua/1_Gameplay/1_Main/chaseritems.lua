@@ -4,7 +4,7 @@ made 15/01/2023 (dd/mm/aaaa).
 ]]
 
 -- You are the Chaser! Bring it!
-local CHASER_VERSION = 13
+local CHASER_VERSION = 14
 
 -- avoid redefiniton on updates
 if timetravel.CHASER_VERSION == nil or timetravel.CHASER_VERSION < CHASER_VERSION then
@@ -194,7 +194,7 @@ timetravel.JawzTargettingLogic = function(player)
 		local lasttarg = player.timetravelconsts.lastJawzTarget
 		local targ, ret
 
-		if lasttarg > -1 and not players[lasttarg].spectator then
+		if player.timetravelconsts.jawzTargetDelay and not players[lasttarg].spectator then
 			targ = players[lasttarg]
 			player.timetravelconsts.jawzTargetDelay = $ - 1
 		else targ = timetravel.K_FindJawzTargetEX(player.mo, player) end

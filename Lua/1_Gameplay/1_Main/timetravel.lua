@@ -1,4 +1,4 @@
-local VERSION = 11
+local VERSION = 12
 
 -- avoid redefiniton on updates
 if timetravel.VERSION == nil or timetravel.VERSION < VERSION then
@@ -160,7 +160,7 @@ timetravel.teleport = function(mo, dontrunhooks)
 	local volume = 255
 	-- Don't make the intro teleports exceedingly loud.
 	if leveltime == timetravel.introTP1tic or leveltime == timetravel.introTP2tic then
-		volume = $ / (timetravel.getActivePlayerCount() or 1) -- Make sure we do not divide by zero, that'd be BAD.
+		volume = 127 + (128 / (timetravel.getActivePlayerCount() or 1)) -- Make sure we do not divide by zero, that'd be BAD.
 	end
 	
 	S_StartSoundAtVolume(mo, sfx_ttshif, volume)
@@ -198,7 +198,7 @@ timetravel.handleThunderShieldZap = function(player)
 	local mobj = player.mo
 	if not (mobj and mobj.valid) then return end
 	
-	local thunderradius = RING_DIST/4
+	local thunderradius = FixedMul(RING_DIST/4, mapobjectscale)
 	local linkedItem = mobj.linkedItem
 	
 	searchBlockmap("objects", function(refmobj, foundmobj)
