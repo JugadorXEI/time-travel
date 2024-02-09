@@ -1,4 +1,4 @@
-local ECHOES_VERSION = 15
+local ECHOES_VERSION = 16
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_VERSION == nil or timetravel.ECHOES_VERSION < ECHOES_VERSION then
@@ -393,18 +393,20 @@ addHook("MobjDeath", function(mobj, inflictor, source)
 	end
 end)
 
-addHook("TouchSpecial", function(special, toucher)
-	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
-	if not timetravel.isActive then return end
+local egglist = {MT_EGGMANITEM, MT_EGGMANITEM_SHIELD}
+for i = 1, #egglist do
+	addHook("TouchSpecial", function(special, toucher)
+		if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+		if not timetravel.isActive then return end
 
-	if special.type == MT_EGGMANITEM or special.type == MT_EGGMANITEM_SHIELD then
 		timetravel.eggmanSoundHandler(special, toucher)
-	end
-end)
+	end, egglist[i])
+end
 
 -- Process this after the eggman handling:
 addHook("MobjRemoved", function(mobj)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
 	if mobj.type == MT_ECHOGHOST then return end
 	if mobj.linkedItem == nil or mobj.linkedItem.valid == false then return end
 	
@@ -414,6 +416,7 @@ end)
 -- Makes echo explosions work
 addHook("PlayerExplode", function(player, inflictor, source)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
 	if not (inflictor and inflictor.valid) then return end
 	
 	local mobj = player.mo
