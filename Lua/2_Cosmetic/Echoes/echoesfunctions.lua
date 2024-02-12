@@ -220,7 +220,7 @@ timetravel.K_UpdateInvincibilitySoundsEX = function(player, mobj)
 
 	if playerMo.health > 0 and timetravel.isDisplayPlayer(player) == -1 then
 		local pks = player.kartstuff
-		if kartinvinsfx.value then
+		if kartinvinsfx and kartinvinsfx.value then
 			if pks[k_growshrinktimer] > 0 then -- Prioritize Grow
 				sfxnum = sfx_alarmg
 			elseif pks[k_invincibilitytimer] > 0 then
