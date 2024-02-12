@@ -377,6 +377,7 @@ end, MT_ECHOGHOST)
 
 addHook("MobjDeath", function(mobj, inflictor, source)
 	if timetravel.ECHOES_VERSION > ECHOES_VERSION then return end
+	if not timetravel.isActive then return end
 	if mobj.type == MT_ECHOGHOST then return end
 	if mobj.linkedItem == nil or mobj.linkedItem.valid == false then return end
 	
