@@ -1,4 +1,4 @@
-local GENERAL_VERSION = 11
+local GENERAL_VERSION = 12
 
 if timetravel == nil then
 	rawset(_G, "timetravel", {})
@@ -143,7 +143,7 @@ timetravel.isLastPlayer = function(player)
 	local lastPlayer = nil
 	for i = #players - 1, 0, -1 do
 		local thisPlayer = players[i]
-		if thisPlayer and thisPlayer.valid then
+		if thisPlayer and thisPlayer.valid and not thisPlayer.spectator then
 			lastPlayer = thisPlayer
 			break
 		end

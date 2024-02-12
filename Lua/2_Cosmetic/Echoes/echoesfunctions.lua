@@ -4,7 +4,7 @@ K_UpdateEngineSounds, K_UpdateInvincibilitySounds, and
 P_SkidAndDriftNoises, made 15/01/2023 (dd/mm/aaaa).
 ]]
 
-local ECHOES_FUNCS_VERSION = 12
+local ECHOES_FUNCS_VERSION = 13
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_FUNCS_VERSION == nil or timetravel.ECHOES_FUNCS_VERSION < ECHOES_FUNCS_VERSION then
@@ -220,7 +220,7 @@ timetravel.K_UpdateInvincibilitySoundsEX = function(player, mobj)
 
 	if playerMo.health > 0 and timetravel.isDisplayPlayer(player) == -1 then
 		local pks = player.kartstuff
-		if kartinvinsfx.value then
+		if kartinvinsfx and kartinvinsfx.value then
 			if pks[k_growshrinktimer] > 0 then -- Prioritize Grow
 				sfxnum = sfx_alarmg
 			elseif pks[k_invincibilitytimer] > 0 then
