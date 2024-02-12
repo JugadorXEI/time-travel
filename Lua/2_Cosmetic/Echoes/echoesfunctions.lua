@@ -4,7 +4,7 @@ K_UpdateEngineSounds, K_UpdateInvincibilitySounds, and
 P_SkidAndDriftNoises, made 15/01/2023 (dd/mm/aaaa).
 ]]
 
-local ECHOES_FUNCS_VERSION = 12
+local ECHOES_FUNCS_VERSION = 13
 
 -- avoid redefiniton on updates
 if timetravel.ECHOES_FUNCS_VERSION == nil or timetravel.ECHOES_FUNCS_VERSION < ECHOES_FUNCS_VERSION then
