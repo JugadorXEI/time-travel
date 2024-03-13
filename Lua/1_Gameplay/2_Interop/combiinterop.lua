@@ -17,7 +17,7 @@ timetravel.combiInit = function()
 
 	-- Oh boy. Which is it?
 	if not combiCvar then combiCvar = CV_FindVar("combi_active") end
-	if not hCombiCvar then hCombiCvar = CV_FindVar("combi_teleportspoof") end
+	if not hCombiCvar then hCombiCvar = CV_FindVar("combi_friendlyfire") end
 	
 	if combiCvar and combiCvar.value > 0 then
 		if hCombiCvar then
@@ -104,8 +104,8 @@ timetravel.addTimeTravelHook(function(mo)
 			playerPartner = partner.mo
 		end
 		combiPartner = playerPartner or player.gargoyle
-		
-		if combiPartner == player.gargoyle and player.gargoyle.timetravel == nil then
+
+		if combiPartner ~= nil and combiPartner == player.gargoyle and player.gargoyle.timetravel == nil then
 			combiPartner.timetravel = {}
 			combiPartner.timetravel.isTimeWarped = mo.timetravel.isTimeWarped
 		end
