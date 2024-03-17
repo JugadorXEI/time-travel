@@ -304,7 +304,7 @@ local function K_DrawKartPlayerCheckEX(player)
 			checkNum = $ + 1
 		end
 		
-		if pks[k_itemtype] == KITEM_GROW or pks[k_growshrinktimer] > 0 then
+		if pks[k_itemtype] == KITEM_GROW or pks[k_growshrinktimer] > 0 or (otherPlayer.hugequest and otherPlayer.hugequest.huge > 0) then
 			checkNum = $ + 4
 		elseif pks[k_itemtype] == KITEM_INVINCIBILITY or pks[k_invincibilitytimer] > 0 then
 			checkNum = $ + 2

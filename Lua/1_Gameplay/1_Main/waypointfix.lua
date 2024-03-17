@@ -123,6 +123,7 @@ end
 local function timeTravelSetPositions()
 	for i = 1, #positionTable do
 		local player = positionTable[i][tablePlayer]
+		if not (player and player.valid) then continue end
 		local pks = player.kartstuff
 		
 		local oldPosition = player.timetravelconsts.kartPosition

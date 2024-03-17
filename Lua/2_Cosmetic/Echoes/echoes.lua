@@ -67,7 +67,7 @@ local function isPlayerDamaged(player, withItemStates, alsoFlashTics)
 	
 	local pks = player.kartstuff
 	return (alsoFlashTics and player.powers[pw_flashing] > 0) or pks[k_squishedtimer] > 0 or pks[k_spinouttimer] > 0 or
-			(withItemStates and (pks[k_invincibilitytimer] > 0 or pks[k_growshrinktimer] > 0)) or
+			(withItemStates and (pks[k_invincibilitytimer] > 0 or pks[k_growshrinktimer] > 0 or (player.hugequest and player.hugequest.huge > 0))) or
 			(alsoFlashTics and pks[k_hyudorotimer] > 0) or
 			(gametype == GT_MATCH and ((pks[k_bumper] <= 0 and pks[k_comebacktimer]) or pks[k_comebackmode] == 1))
 
